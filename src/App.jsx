@@ -1482,11 +1482,11 @@ function OwnerDynamicsPage() {
                               <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">操作人</span> <span className="font-medium">{snapshot.updated_by || '系统'}</span></div>
                               <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">客户等级</span>
                                 <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${
-                                   snapshot.customer_level === 'VIP' ? 'bg-yellow-100 text-yellow-800' :
-                                   snapshot.customer_level === '重点关注' ? 'bg-red-100 text-red-800' :
-                                   snapshot.customer_level === '黑名单' ? 'bg-gray-800 text-white' :
+                                   snapshot.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
+                                   snapshot.customer_level === 'A' ? 'bg-red-100 text-red-800' :
+                                   snapshot.customer_level === 'B' ? 'bg-blue-100 text-blue-800' :
                                    'bg-[#F2F2F7] text-[#1d1d1f]'
-                                 }`}>{snapshot.customer_level || '普通'}</span>
+                                 }`}>{snapshot.customer_level || 'C'}</span>
                               </div>
                             </div>
                             <div className="text-[#424245] mb-3"><span className="text-[#86868b] text-xs block mb-1">舆论标签</span> {snapshot.opinion_tags || '-'}</div>
@@ -1811,11 +1811,11 @@ function AdminPage({ onViewRecord }) {
                   <td className="p-4 truncate">
                     <div className="flex items-center gap-2 mb-1 truncate">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        record.customer_level === 'VIP' ? 'bg-yellow-100 text-yellow-800' :
-                        record.customer_level === '重点关注' ? 'bg-red-100 text-red-800' :
-                        record.customer_level === '黑名单' ? 'bg-gray-800 text-white' :
+                        record.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
+                        record.customer_level === 'A' ? 'bg-red-100 text-red-800' :
+                        record.customer_level === 'B' ? 'bg-blue-100 text-blue-800' :
                         'bg-[#F2F2F7] text-[#1d1d1f]'
-                      }`}>{record.customer_level || '普通'}</span>
+                      }`}>{record.customer_level || 'C'}</span>
                     </div>
                     <div className="text-[11px] text-[#424245] truncate" title={record.opinion_tags}>{record.opinion_tags || '暂无标签'}</div>
                   </td>
@@ -1848,11 +1848,11 @@ function AdminPage({ onViewRecord }) {
                     <div className="text-xs text-[#86868b] mt-0.5">{record.area ? `${record.area}㎡` : '面积未知'} · {record.is_resident ? '常住' : '非常住'}</div>
                   </div>
                   <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold ${
-                    record.customer_level === 'VIP' ? 'bg-yellow-100 text-yellow-800' :
-                    record.customer_level === '重点关注' ? 'bg-red-100 text-red-800' :
-                    record.customer_level === '黑名单' ? 'bg-gray-800 text-white' :
+                    record.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
+                    record.customer_level === 'A' ? 'bg-red-100 text-red-800' :
+                    record.customer_level === 'B' ? 'bg-blue-100 text-blue-800' :
                     'bg-[#F2F2F7] text-[#1d1d1f]'
-                  }`}>{record.customer_level || '普通'}</span>
+                  }`}>{record.customer_level || 'C'}</span>
                 </div>
                 
                 <div className="bg-black/[0.03] p-3 rounded-xl space-y-2 text-sm mb-3">
@@ -1930,11 +1930,11 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory }) {
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">最后操作人</span><span className="font-medium text-[#007AFF]">{details.updated_by || '系統'}</span></div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">客户等级</span>
                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                      details.customer_level === 'VIP' ? 'bg-yellow-100 text-yellow-800' :
-                      details.customer_level === '重点关注' ? 'bg-red-100 text-red-800' :
-                      details.customer_level === '黑名单' ? 'bg-gray-800 text-white' :
+                      details.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
+                      details.customer_level === 'A' ? 'bg-red-100 text-red-800' :
+                      details.customer_level === 'B' ? 'bg-blue-100 text-blue-800' :
                       'bg-[#F2F2F7] text-[#1d1d1f]'
-                    }`}>{details.customer_level || '普通'}</span>
+                    }`}>{details.customer_level || 'C'}</span>
                  </div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">建筑面积 (㎡)</span><span className="text-[#424245]">{details.area || '-'}</span></div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">交房标准</span><span className="text-[#424245]">{details.delivery_standard || '-'}</span></div>
@@ -2033,7 +2033,7 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory }) {
                              <User className="w-4 h-4 text-[#007AFF]" />
                              操作人：{snapshot.updated_by || '系统'}
                            </div>
-                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${snapshot.customer_level === 'VIP' ? 'bg-yellow-100 text-yellow-800' : snapshot.customer_level === '重点关注' ? 'bg-red-100 text-red-800' : snapshot.customer_level === '黑名单' ? 'bg-gray-800 text-white' : 'bg-[#E9E9EB] text-[#1d1d1f]'}`}>{snapshot.customer_level || '普通'}</span>
+                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${snapshot.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' : snapshot.customer_level === 'A' ? 'bg-red-100 text-red-800' : snapshot.customer_level === 'B' ? 'bg-blue-100 text-blue-800' : 'bg-[#E9E9EB] text-[#1d1d1f]'}`}>{snapshot.customer_level || 'C'}</span>
                          </div>
                          <div className="text-[#424245] mb-2"><span className="text-[#86868b] text-xs block mb-0.5">舆论标签</span> {snapshot.opinion_tags || '-'}</div>
                          {snapshot.negative_info && <div className="text-red-600 bg-red-50/50 p-2 rounded-lg border border-red-100/50 mb-2"><span className="text-red-500 text-xs block mb-0.5 font-medium">负向/敏感信息</span> {snapshot.negative_info}</div>}
