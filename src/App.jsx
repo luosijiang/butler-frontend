@@ -32,65 +32,91 @@ const calculateDuration = (start, end) => {
 };
 
 // --- 新增：富有科技感与深度思考文字的 AI 等待动画组件 ---
-function ThinkingIndicator() {
+function ThinkingIndicator({ targetRoom }) {
   const [textIndex, setTextIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+
   const texts = [
     "初始化神经推理引擎...",
-    "提取上下文多维语义特征...",
-    "建立业主基础档案关联树...",
-    "检索工单历史与时间轴快照...",
-    "匹配《非暴力沟通(NVC)》语料库...",
-    "进行心理状态与负向情绪推演...",
-    "校准话术温度与安全边界限制...",
+    "建立多维语义关联矩阵...",
+    "提取历史上下文与快照...",
+    "匹配《非暴力沟通(NVC)》语料...",
+    "注入物业领域知识图谱...",
+    "正在推演负向情绪边界...",
+    "生成降冲突话术拓扑树...",
+    "深度检索相似工单案例...",
+    "优化最终输出语义连贯性...",
     "模型解算完成，生成响应流..."
   ];
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const textTimer = setInterval(() => {
       setTextIndex(prev => (prev + 1) % texts.length);
-    }, 1200);
-    return () => clearInterval(timer);
+    }, 800);
+
+    // 采用“渐进缓动（Asymptotic）”算法：根据剩余距离计算步长，越接近99%越慢，更加拟真
+    const progressTimer = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 99) return 99;
+        const remaining = 99 - prev;
+        // 每次前进剩余距离的 5%~15%，保底推进 0.5%，形成“起步快、后段极度平滑”的真实感
+        const increment = Math.max(0.5, remaining * (Math.random() * 0.1 + 0.05));
+        return prev + increment;
+      });
+    }, 350);
+
+    return () => {
+      clearInterval(textTimer);
+      clearInterval(progressTimer);
+    };
   }, []);
 
   return (
-    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 mb-2">
+    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 mb-2 max-w-[85%] sm:max-w-[75%]">
       <div className="relative mr-3 shrink-0 mt-1">
-        <div className="absolute inset-0 bg-[#007AFF] rounded-full blur animate-ping opacity-30" style={{ animationDuration: '2s' }}></div>
-        <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-[#007AFF] to-[#0051e3] flex items-center justify-center shadow-[0_4px_12px_rgba(0,122,255,0.3)] border border-white/20">
-          <Sparkles className="w-4 h-4 text-white animate-pulse" />
+        <div className="absolute inset-0 bg-[#007AFF] rounded-full blur-md animate-pulse opacity-40"></div>
+        <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-[#007AFF] to-purple-500 flex items-center justify-center shadow-[0_0_15px_rgba(0,122,255,0.4)] border border-white/40">
+          <Sparkles className="w-4 h-4 text-white" style={{ animation: 'spin 3s linear infinite' }} />
         </div>
       </div>
 
-      <div className="relative bg-gradient-to-br from-white/90 to-white/50 backdrop-blur-xl border border-white/60 shadow-[0_12px_32px_rgba(0,0,0,0.06)] rounded-2xl rounded-bl-sm px-5 py-4 flex flex-col gap-3 min-w-[280px] overflow-hidden">
-        <div className="absolute top-0 left-0 h-[3px] w-full bg-gradient-to-r from-transparent via-[#007AFF] to-purple-500 animate-pulse opacity-80"></div>
+      <div className="relative bg-white/70 backdrop-blur-2xl border border-white/80 shadow-[0_12px_40px_rgba(0,122,255,0.1),inset_0_1px_2px_rgba(255,255,255,0.9)] rounded-3xl rounded-bl-sm px-5 py-4 flex flex-col gap-3 min-w-[280px] sm:min-w-[320px] overflow-hidden group">
+        {/* 核心增加：面板扫光动画 */}
+        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite] pointer-events-none"></div>
         
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-2.5">
             <Loader2 className="w-4 h-4 text-[#007AFF] animate-spin" />
-            <span className="text-xs font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#007AFF] to-purple-600 uppercase">
-              System Reasoning
+            <span className="text-xs font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#007AFF] to-purple-600 uppercase">
+              AI Processing
             </span>
           </div>
-          <div className="flex gap-1.5 items-center h-3">
-            <div className="w-1 bg-[#007AFF]/70 rounded-full animate-bounce h-2" style={{ animationDuration: '0.8s' }}></div>
-            <div className="w-1 bg-indigo-500/70 rounded-full animate-bounce h-3" style={{ animationDuration: '0.8s', animationDelay: '0.15s' }}></div>
-            <div className="w-1 bg-purple-500/70 rounded-full animate-bounce h-2" style={{ animationDuration: '0.8s', animationDelay: '0.3s' }}></div>
+          <div className="text-[10px] font-mono font-bold text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded-full">
+            {Math.floor(progress)}%
           </div>
         </div>
 
-        <div className="bg-black/[0.03] rounded-xl p-3 border border-white/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] relative overflow-hidden">
-          <div className="text-[11px] font-mono text-[#424245] flex flex-col gap-2">
+        <div className="bg-black/[0.03] rounded-xl p-3 border border-white/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] relative overflow-hidden z-10">
+          <div className="text-[12px] font-mono text-[#424245] flex flex-col gap-2">
             <div className="flex items-center gap-2 opacity-50">
-              <CheckCircle className="w-3 h-3 text-[#34C759]" />
-              <span>载入历史上下文序列... [OK]</span>
+              <CheckCircle className="w-3.5 h-3.5 text-[#34C759]" />
+              <span className="truncate">载入 {targetRoom || '全局'} 知识图谱... [OK]</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[#007AFF] animate-pulse w-3 text-center font-bold">❯</span> 
-              <span key={textIndex} className="animate-in fade-in slide-in-from-right-2 duration-300">
+              <span key={textIndex} className="animate-in fade-in slide-in-from-right-2 duration-300 truncate text-[#1d1d1f] font-medium">
                 {texts[textIndex]}
               </span>
             </div>
           </div>
+        </div>
+
+        {/* 核心增加：动态科技渐变进度条 */}
+        <div className="h-1 w-full bg-black/5 rounded-full overflow-hidden mt-1 relative z-10">
+          <div
+            className="h-full bg-gradient-to-r from-[#007AFF] via-purple-500 to-[#007AFF] rounded-full transition-all duration-300 ease-out bg-[length:200%_100%] animate-[gradientSweep_2s_linear_infinite]"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
     </div>
@@ -157,6 +183,38 @@ export default function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showContextWarning, setShowContextWarning] = useState(false); // 新增：上下文超载警告状态
+  const [systemStatus, setSystemStatus] = useState('checking'); // 新增：系统连接真实状态
+
+  const checkSystemStatus = async (isManual = false) => {
+    if (isManual) setSystemStatus('checking');
+    const token = localStorage.getItem('butler_auth_token');
+    if (!token) {
+      setSystemStatus('expired');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/system/status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401 || res.status === 403) {
+        setSystemStatus('expired');
+      } else if (!res.ok) {
+        setSystemStatus('error');
+      } else {
+        setSystemStatus('normal');
+      }
+    } catch (err) {
+      setSystemStatus('disconnected');
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkSystemStatus();
+      const interval = setInterval(() => checkSystemStatus(false), 30000); // 30秒真实心跳检测
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     localStorage.setItem('butler_chat_history', JSON.stringify(chatHistory));
@@ -634,11 +692,11 @@ export default function App() {
       <style>
         {`
           @keyframes softFadeIn {
-            0% { opacity: 0; transform: translateY(12px) scale(0.995); filter: blur(2px); }
+               0% { opacity: 0; transform: translateY(24px) scale(0.98); filter: blur(8px); }
             100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
           }
           .page-transition {
-            animation: softFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+               animation: softFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           }
         @keyframes float {
           0%, 100% { transform: translateY(0) translateX(0) scale(1); }
@@ -648,6 +706,14 @@ export default function App() {
         .animate-float-1 { animation: float 14s ease-in-out infinite; }
         .animate-float-2 { animation: float 18s ease-in-out infinite reverse; }
         .animate-float-3 { animation: float 22s ease-in-out infinite 2s; }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes gradientSweep {
+          0% { background-position: 200% 50%; }
+          100% { background-position: -200% 50%; }
+        }
         `}
       </style>
       <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-gradient-to-br from-blue-400/40 to-teal-300/30 rounded-full blur-[100px] pointer-events-none z-0 mix-blend-multiply animate-float-1" />
@@ -720,7 +786,7 @@ export default function App() {
                setMode('chat');
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
-             className={`flex items-center gap-3 text-sm transition-all duration-300 w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'chat' ? 'bg-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-[#007AFF] font-semibold border border-white/60 scale-[1.02]' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-sm hover:translate-x-1 border border-transparent'}`}
+             className={`flex items-center gap-3 text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'chat' ? 'bg-white/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] text-[#007AFF] font-bold border border-white/80 scale-[1.02] translate-x-1' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:translate-x-1 border border-transparent'}`}
            >
              <MessageSquare className="w-4 h-4" /> AI 档案分析
            </button>
@@ -729,7 +795,7 @@ export default function App() {
                setMode('upload');
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
-             className={`flex items-center gap-3 text-sm transition-all duration-300 w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'upload' ? 'bg-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-[#007AFF] font-semibold border border-white/60 scale-[1.02]' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-sm hover:translate-x-1 border border-transparent'}`}
+             className={`flex items-center gap-3 text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'upload' ? 'bg-white/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] text-[#007AFF] font-bold border border-white/80 scale-[1.02] translate-x-1' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:translate-x-1 border border-transparent'}`}
            >
              <Upload className="w-4 h-4" /> 信息录入
            </button>
@@ -738,7 +804,7 @@ export default function App() {
                setMode('repair_manage');
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
-             className={`flex items-center gap-3 text-sm transition-all duration-300 w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'repair_manage' ? 'bg-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-orange-600 font-semibold border border-white/60 scale-[1.02]' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-sm hover:translate-x-1 border border-transparent'}`}
+             className={`flex items-center gap-3 text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'repair_manage' ? 'bg-white/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] text-orange-600 font-bold border border-white/80 scale-[1.02] translate-x-1' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:translate-x-1 border border-transparent'}`}
            >
              <Wrench className="w-4 h-4" /> 报修管理
            </button>
@@ -747,7 +813,7 @@ export default function App() {
                setMode('owner_dynamics');
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
-             className={`flex items-center gap-3 text-sm transition-all duration-300 w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'owner_dynamics' ? 'bg-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-[#007AFF] font-semibold border border-white/60 scale-[1.02]' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-sm hover:translate-x-1 border border-transparent'}`}
+             className={`flex items-center gap-3 text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'owner_dynamics' ? 'bg-white/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] text-[#007AFF] font-bold border border-white/80 scale-[1.02] translate-x-1' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:translate-x-1 border border-transparent'}`}
            >
              <Activity className="w-4 h-4" /> 业主动态
            </button>
@@ -756,7 +822,7 @@ export default function App() {
                setShowAdminAuth(true);
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
-             className={`flex items-center gap-3 text-sm transition-all duration-300 w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'admin' ? 'bg-white/80 shadow-[0_4px_16px_rgba(0,0,0,0.06)] text-[#007AFF] font-semibold border border-white/60 scale-[1.02]' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-sm hover:translate-x-1 border border-transparent'}`}
+             className={`flex items-center gap-3 text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] w-full px-4 py-3 rounded-xl mb-1.5 ${mode === 'admin' ? 'bg-white/70 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] text-[#007AFF] font-bold border border-white/80 scale-[1.02] translate-x-1' : 'text-[#424245] hover:text-[#1d1d1f] hover:bg-white/50 hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:translate-x-1 border border-transparent'}`}
            >
              <FileText className="w-4 h-4" /> 后台记录
            </button>
@@ -797,7 +863,7 @@ export default function App() {
                  <input 
                    type="text" 
                    placeholder="搜索房号/姓名锁定业主..." 
-                   className="w-full bg-white/80 backdrop-blur-md border-2 border-white/60 hover:border-[#007AFF]/30 rounded-xl sm:rounded-full py-2 sm:py-2.5 pl-10 sm:pl-12 pr-4 text-sm sm:text-[15px] focus:outline-none focus:ring-2 sm:focus:ring-4 focus:ring-[#007AFF]/20 focus:border-[#007AFF] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:shadow-[0_4px_16px_rgba(0,0,0,0.04)] focus:shadow-[0_4px_12px_rgba(0,122,255,0.15)] font-medium text-[#1d1d1f] placeholder:text-[#86868b] placeholder:font-normal"
+                 className="w-full bg-white/60 backdrop-blur-2xl border border-white/80 hover:border-[#007AFF]/40 rounded-xl sm:rounded-full py-2 sm:py-2.5 pl-10 sm:pl-12 pr-4 text-sm sm:text-[15px] focus:outline-none focus:ring-4 focus:ring-[#007AFF]/15 focus:border-[#007AFF]/50 transition-all duration-500 ease-out shadow-[0_4px_16px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.8)] focus:shadow-[0_8px_24px_rgba(0,122,255,0.15)] font-medium text-[#1d1d1f] placeholder:text-[#86868b] placeholder:font-normal"
                    value={globalSearch}
                    onChange={handleGlobalSearchChange}
                    onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
@@ -850,10 +916,10 @@ export default function App() {
                   </div>
                 )}
                 
-                <div className={`max-w-[85%] sm:max-w-[75%] break-words px-5 py-3.5 rounded-2xl transition-all duration-300 text-[15px] hover:shadow-md ${
+                <div className={`max-w-[85%] sm:max-w-[75%] break-words px-5 py-3.5 rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] text-[15px] ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-br from-[#007AFF] via-[#0062FF] to-[#0051e3] text-white rounded-br-sm shadow-[0_8px_20px_rgba(0,122,255,0.25)] border border-white/20 hover:-translate-y-0.5' 
-                    : 'bg-gradient-to-br from-white/90 to-white/50 backdrop-blur-xl border border-white/60 text-[#1d1d1f] rounded-bl-sm shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5'
+                    ? 'bg-gradient-to-br from-[#007AFF] via-[#0062FF] to-[#0051e3] text-white rounded-br-sm shadow-[0_12px_32px_rgba(0,122,255,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.4)] hover:-translate-y-1' 
+                    : 'bg-white/70 backdrop-blur-2xl border border-white/80 text-[#1d1d1f] rounded-bl-sm shadow-[0_12px_40px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1'
                 }`}>
                   {renderMessageContent(msg.content, msg.role === 'user', idx)}
                 </div>
@@ -861,7 +927,7 @@ export default function App() {
               </div>
             ))}
             
-            {isLoading && <ThinkingIndicator />}
+            {isLoading && <ThinkingIndicator targetRoom={activeTargetRoom} />}
             <div ref={messagesEndRef} className="h-4" />
             </div>
           ) : mode === 'upload' ? (
@@ -888,7 +954,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="w-full bg-white/70 backdrop-blur-3xl shadow-[0_12px_40px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_50px_rgba(0,0,0,0.12)] border border-white/80 hover:border-white rounded-3xl p-2.5 flex items-center gap-2 transition-all focus-within:bg-white/95 focus-within:shadow-[0_24px_60px_rgba(0,122,255,0.15)] focus-within:border-[#007AFF]/20 relative z-10">
+          <div className="w-full bg-white/60 backdrop-blur-[40px] shadow-[0_16px_60px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.9)] hover:shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/80 hover:border-white rounded-[2rem] p-2.5 flex items-center gap-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-within:bg-white/80 focus-within:shadow-[0_32px_100px_rgba(0,122,255,0.2)] focus-within:border-[#007AFF]/30 relative z-10">
             {/* 核心修改：将毫无作用的加号按钮换成一键重置对话的垃圾桶按钮 */}
             <button 
               onClick={handleClearAndNew}
@@ -936,7 +1002,7 @@ export default function App() {
 
       <aside className="w-[300px] bg-white/30 border-l border-white/50 p-6 hidden xl:flex flex-col shrink-0 z-20">
          <div className="space-y-4 flex-1 flex flex-col min-h-0">
-            <div className="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl p-5 rounded-3xl shadow-lg border border-white/60 shrink-0">
+            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 shrink-0 hover:-translate-y-1 transition-transform duration-500 ease-out">
                <div className="text-[10px] text-[#86868b] font-bold uppercase mb-4 tracking-wider flex items-center gap-2">
                  <div className="w-1.5 h-1.5 rounded-full bg-[#007AFF]"></div> 今日概览
                </div>
@@ -952,7 +1018,7 @@ export default function App() {
                </div>
             </div>
 
-            <div className="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl p-5 rounded-3xl shadow-lg border border-white/60 flex flex-col min-h-0 flex-1">
+            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 flex flex-col min-h-0 flex-1 hover:-translate-y-1 transition-transform duration-500 ease-out">
                <div className="text-[10px] text-[#86868b] font-bold uppercase mb-4 tracking-wider flex items-center gap-2 shrink-0">
                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div> 待处理工单
                </div>
@@ -981,14 +1047,39 @@ export default function App() {
                </div>
             </div>
 
-            <div className="bg-[#1d1d1f] p-5 rounded-3xl text-white shadow-lg shadow-black/10 relative overflow-hidden group shrink-0">
+            <div className={`p-5 rounded-3xl text-white shadow-lg relative overflow-hidden group shrink-0 transition-all duration-500 ${
+              systemStatus === 'normal' ? 'bg-[#1d1d1f] shadow-black/10' :
+              systemStatus === 'expired' ? 'bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/20' :
+              systemStatus === 'checking' ? 'bg-slate-700 shadow-slate-700/20' :
+              'bg-gradient-to-br from-red-500 to-red-700 shadow-red-500/20'
+            }`}>
                <div className="flex items-start gap-3">
-                  <div className="bg-white/10 p-2 rounded-lg">
-                    <Shield className="w-5 h-5 text-white/80" />
+                  <div className="bg-white/10 p-2 rounded-lg shrink-0">
+                    {systemStatus === 'normal' ? <Shield className="w-5 h-5 text-white/80" /> : 
+                     systemStatus === 'checking' ? <Loader2 className="w-5 h-5 text-white/80 animate-spin" /> : 
+                     <AlertTriangle className="w-5 h-5 text-white/90" />}
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">系统状态正常</h3>
-                    <p className="text-xs text-white/60 mt-1 leading-relaxed">AI 引擎在线<br/>数据库连接稳定</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold truncate">
+                      {systemStatus === 'checking' ? '检测系统中...' :
+                       systemStatus === 'normal' ? '系统状态正常' :
+                       systemStatus === 'expired' ? '登录凭证已过期' : '系统连接异常'}
+                    </h3>
+                    <p className="text-xs text-white/80 mt-1 leading-relaxed">
+                      {systemStatus === 'checking' ? '正在与核心组件握手...' :
+                       systemStatus === 'normal' ? <><span className="text-green-400 mr-1 text-[10px]">●</span>AI 引擎在线<br/><span className="text-green-400 mr-1 text-[10px]">●</span>数据库连接稳定</> :
+                       systemStatus === 'expired' ? '安全凭证已失效，为了您的数据安全，请重新登录。' : '无法连接到后台服务器，或数据库无响应。'}
+                    </p>
+                    {systemStatus === 'expired' && (
+                      <button onClick={handleLogout} className="mt-3 text-xs bg-white text-orange-600 hover:bg-orange-50 px-3 py-2 rounded-xl transition-colors font-bold w-full shadow-sm active:scale-95 flex items-center justify-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" /> 立即重新登录
+                      </button>
+                    )}
+                    {(systemStatus === 'disconnected' || systemStatus === 'error') && (
+                      <button onClick={() => checkSystemStatus(true)} className="mt-3 text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-xl transition-colors font-medium w-full shadow-sm active:scale-95">
+                        重新尝试连接
+                      </button>
+                    )}
                   </div>
                </div>
             </div>
@@ -1004,8 +1095,8 @@ export default function App() {
       </div>
 
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300 ease-out overflow-y-auto">
-          <div className="m-auto bg-gradient-to-br from-white/90 to-white/60 backdrop-blur-3xl rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.2)] border border-white/60 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-[0.9] slide-in-from-bottom-4 duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]">
+        <div className="fixed inset-0 z-50 flex p-4 bg-black/30 backdrop-blur-md animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto">
+          <div className="m-auto bg-white/70 backdrop-blur-[60px] rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.9)] border border-white/80 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
             <div className="p-5 border-b border-white/50 flex justify-between items-center bg-white/40">
               <h3 className="font-semibold text-lg text-[#1d1d1f]">系统设置</h3>
               <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors"><X className="w-5 h-5 text-[#86868b]"/></button>
@@ -1039,6 +1130,7 @@ export default function App() {
           onClose={() => setGlobalSelectedRecord(null)} 
           onAIAnalyze={handleAIAnalysis}
           showHistory={mode === 'admin'}
+          hideAIButton={mode === 'admin'}
         />
       )}
     </div>
@@ -1093,11 +1185,11 @@ function RepairManagePage({ onUpdate }) {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 h-full flex flex-col animate-in fade-in duration-500">
-      <div className="bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-3xl rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.08)] border border-white/50 overflow-hidden flex flex-col md:flex-row flex-1 min-h-[80vh] md:min-h-[600px]">
+      <div className="bg-white/40 backdrop-blur-[40px] rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.8)] border border-white/60 overflow-hidden flex flex-col md:flex-row flex-1 min-h-[80vh] md:min-h-[600px] transition-all duration-500">
         
         {/* 左侧：有报修记录的业主列表 */}
-        <div className={`w-full md:w-1/3 border-b md:border-b-0 md:border-r border-white/50 flex flex-col bg-white/30 shrink-0 transition-all ${selectedRoom ? 'hidden md:flex' : 'flex-1 md:h-auto'}`}>
-          <div className="p-5 border-b border-white/50 bg-white/40">
+        <div className={`w-full md:w-1/3 border-b md:border-b-0 border-white/30 flex flex-col bg-white/10 shrink-0 transition-all relative z-0 ${selectedRoom ? 'hidden md:flex' : 'flex-1 md:h-auto'}`}>
+          <div className="p-5 border-b border-white/20 bg-white/10">
             <h2 className="text-lg font-semibold text-[#1d1d1f] flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
                 <Wrench className="w-4 h-4" />
@@ -1111,7 +1203,7 @@ function RepairManagePage({ onUpdate }) {
                 placeholder="搜索房号 / 姓名..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-white/50 border border-white/60 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                className="w-full bg-white/40 border border-white/50 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-colors hover:bg-white/50"
               />
             </div>
           </div>
@@ -1123,7 +1215,7 @@ function RepairManagePage({ onUpdate }) {
                 <button 
                   key={r.room}
                   onClick={() => setSelectedRoom(r.room)}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${selectedRoom === r.room ? 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/60 text-[#007AFF]' : 'hover:bg-white/50 text-[#424245] border border-transparent'}`}
+                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between group ${selectedRoom === r.room ? 'bg-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.06)] border border-white/80 text-[#007AFF] scale-[1.02] translate-x-2' : 'hover:bg-white/40 hover:translate-x-1 text-[#424245] border border-transparent'}`}
                 >
                   <div>
                     <div className={`font-semibold text-sm ${selectedRoom === r.room ? 'text-[#1d1d1f]' : ''}`}>{r.room}</div>
@@ -1139,10 +1231,10 @@ function RepairManagePage({ onUpdate }) {
         </div>
 
         {/* 右侧：报修记录详情表格 */}
-        <div className={`w-full md:w-2/3 flex flex-col bg-white/40 flex-1 min-w-0 min-h-0 ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-2/3 flex flex-col bg-gradient-to-br from-white/95 to-white/70 shadow-[0_-16px_48px_-16px_rgba(0,0,0,0.15),-24px_0_48px_-16px_rgba(0,0,0,0.15),inset_1px_1px_0_rgba(255,255,255,1)] relative z-10 flex-1 min-w-0 min-h-0 ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
           {selectedRoom ? (
             <>
-              <div className="p-5 border-b border-white/50 bg-white/30 flex items-center justify-between shrink-0">
+              <div className="p-5 border-b border-white/80 bg-white/60 backdrop-blur-md flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <button onClick={() => setSelectedRoom(null)} className="md:hidden p-1.5 -ml-2 hover:bg-black/5 rounded-lg text-[#86868b] active:scale-95 transition-all"><ArrowRight className="w-5 h-5 rotate-180" /></button>
                   <h3 className="text-lg font-semibold text-[#1d1d1f] flex items-center gap-2">
@@ -1157,7 +1249,7 @@ function RepairManagePage({ onUpdate }) {
                 {/* 全端統一：卡片式佈局，徹底解決寬度擠壓與向右滾動的問題 */}
                 <div className="grid grid-cols-1 gap-4">
                   {(groupedRecords[selectedRoom] || []).map((record) => (
-                    <div key={record.id} className={`p-5 rounded-2xl border shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all flex flex-col ${record.status === '已完成' ? 'bg-white/40 border-white/40 opacity-90' : 'bg-white/80 border-white/60'}`}>
+                    <div key={record.id} className={`p-5 rounded-[1.5rem] border shadow-[0_8px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${record.status === '已完成' ? 'bg-white/30 backdrop-blur-md border-white/40 opacity-90' : 'bg-white/60 backdrop-blur-xl border-white/80'}`}>
                       <div className="flex justify-between items-start mb-3">
                         <span className="font-mono text-sm text-[#86868b] font-medium">#{record.id}</span>
                         <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${record.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{record.status}</span>
@@ -1188,8 +1280,8 @@ function RepairManagePage({ onUpdate }) {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-[#86868b] p-6">
-              <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center mb-4 shadow-sm border border-white/60">
-                <Wrench className="w-8 h-8 text-orange-500/40" />
+              <div className="w-20 h-20 bg-white/60 rounded-full flex items-center justify-center mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,1)] border border-white/80">
+                <Wrench className="w-8 h-8 text-orange-400" />
               </div>
               <p className="font-medium text-[#424245] text-base">请在左侧选择一个业主</p>
               <p className="text-sm mt-2">查看其专属的报修工单记录</p>
@@ -1253,8 +1345,8 @@ function RepairEditModal({ record, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300 ease-out overflow-y-auto">
-      <div className="m-auto bg-gradient-to-br from-white/90 to-white/60 backdrop-blur-3xl rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.2)] border border-white/60 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.9] slide-in-from-bottom-4 duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]">
+    <div className="fixed inset-0 z-50 flex p-4 bg-black/30 backdrop-blur-md animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto">
+      <div className="m-auto bg-white/70 backdrop-blur-[60px] rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.9)] border border-white/80 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="p-5 border-b border-white/50 flex justify-between items-center bg-white/40">
           <h3 className="font-semibold text-lg text-[#1d1d1f] flex items-center gap-2">
             <Wrench className="w-5 h-5 text-orange-500" /> 更新报修记录
@@ -1384,11 +1476,11 @@ function OwnerDynamicsPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 h-full flex flex-col animate-in fade-in duration-500">
-      <div className="bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-3xl rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.08)] border border-white/50 overflow-hidden flex flex-col md:flex-row flex-1 min-h-[80vh] md:min-h-[600px]">
+      <div className="bg-white/40 backdrop-blur-[40px] rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.8)] border border-white/60 overflow-hidden flex flex-col md:flex-row flex-1 min-h-[80vh] md:min-h-[600px] transition-all duration-500">
         
         {/* 左侧：业主列表 */}
-        <div className={`w-full md:w-1/3 border-b md:border-b-0 md:border-r border-white/50 flex flex-col bg-white/30 shrink-0 transition-all ${selectedRoom ? 'hidden md:flex' : 'flex-1 md:h-auto'}`}>
-          <div className="p-5 border-b border-white/50 bg-white/40">
+        <div className={`w-full md:w-1/3 border-b md:border-b-0 border-white/30 flex flex-col bg-white/10 shrink-0 transition-all relative z-0 ${selectedRoom ? 'hidden md:flex' : 'flex-1 md:h-auto'}`}>
+          <div className="p-5 border-b border-white/20 bg-white/10">
             <h2 className="text-lg font-semibold text-[#1d1d1f] flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#007AFF]">
                 <Activity className="w-4 h-4" />
@@ -1402,7 +1494,7 @@ function OwnerDynamicsPage() {
                 placeholder="搜索房号 / 姓名..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-white/50 border border-white/60 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                className="w-full bg-white/40 border border-white/50 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-colors hover:bg-white/50"
               />
             </div>
           </div>
@@ -1414,7 +1506,7 @@ function OwnerDynamicsPage() {
                 <button 
                   key={owner.building_room}
                   onClick={() => setSelectedRoom(owner.building_room)}
-                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center justify-between group ${selectedRoom === owner.building_room ? 'bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-white/60 text-[#007AFF]' : 'hover:bg-white/50 text-[#424245] border border-transparent'}`}
+                  className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between group ${selectedRoom === owner.building_room ? 'bg-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.06)] border border-white/80 text-[#007AFF] scale-[1.02] translate-x-2' : 'hover:bg-white/40 hover:translate-x-1 text-[#424245] border border-transparent'}`}
                 >
                   <div>
                     <div className={`font-semibold text-sm ${selectedRoom === owner.building_room ? 'text-[#1d1d1f]' : ''}`}>{owner.building_room}</div>
@@ -1430,10 +1522,10 @@ function OwnerDynamicsPage() {
         </div>
 
         {/* 右侧：动态轨迹 */}
-        <div className={`w-full md:w-2/3 flex flex-col bg-white/40 flex-1 min-w-0 min-h-0 ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-2/3 flex flex-col bg-gradient-to-br from-white/95 to-white/70 shadow-[0_-16px_48px_-16px_rgba(0,0,0,0.15),-24px_0_48px_-16px_rgba(0,0,0,0.15),inset_1px_1px_0_rgba(255,255,255,1)] relative z-10 flex-1 min-w-0 min-h-0 ${!selectedRoom ? 'hidden md:flex' : 'flex'}`}>
           {selectedRoom ? (
             <>
-              <div className="p-5 border-b border-white/50 bg-white/30 flex items-center justify-between shrink-0">
+              <div className="p-5 border-b border-white/80 bg-white/60 backdrop-blur-md flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <button onClick={() => setSelectedRoom(null)} className="md:hidden p-1.5 -ml-2 hover:bg-black/5 rounded-lg text-[#86868b] active:scale-95 transition-all"><ArrowRight className="w-5 h-5 rotate-180" /></button>
                   <h3 className="text-lg font-semibold text-[#1d1d1f] flex items-center gap-2">
@@ -1476,7 +1568,7 @@ function OwnerDynamicsPage() {
                           <div className="text-xs text-[#86868b] font-mono mb-2">{hist.created_at}</div>
                           <div 
                             onClick={() => setExpandedHistId(isExpanded ? null : (hist.id || idx))}
-                            className={`bg-white/80 backdrop-blur-md border p-5 rounded-2xl text-sm transition-all cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/30 shadow-[0_4px_24px_rgba(0,122,255,0.12)]' : 'border-white/60 shadow-sm hover:shadow-[0_4px_20px_rgba(0,122,255,0.08)]'}`}
+                            className={`bg-white/60 backdrop-blur-2xl border p-5 rounded-[1.5rem] text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/40 shadow-[0_16px_40px_rgba(0,122,255,0.15),inset_0_1px_2px_rgba(255,255,255,0.9)] -translate-y-1' : 'border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1'}`}
                           >
                             <div className="grid grid-cols-2 gap-4 mb-3">
                               <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">操作人</span> <span className="font-medium">{snapshot.updated_by || '系统'}</span></div>
@@ -1535,8 +1627,8 @@ function OwnerDynamicsPage() {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-[#86868b] p-6">
-              <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center mb-4 shadow-sm border border-white/60">
-                <Activity className="w-8 h-8 text-[#007AFF]/40" />
+              <div className="w-20 h-20 bg-white/60 rounded-full flex items-center justify-center mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,1)] border border-white/80">
+                <Activity className="w-8 h-8 text-[#007AFF]/60" />
               </div>
               <p className="font-medium text-[#424245] text-base">请在左侧选择一个业主</p>
               <p className="text-sm mt-2">查看其专属的动态变更轨迹</p>
@@ -1587,8 +1679,8 @@ function AdminAuthModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300 ease-out overflow-y-auto">
-      <div className="m-auto bg-gradient-to-br from-white/90 to-white/60 backdrop-blur-3xl rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.2)] border border-white/60 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-[0.9] slide-in-from-bottom-4 duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]">
+    <div className="fixed inset-0 z-50 flex p-4 bg-black/30 backdrop-blur-md animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto">
+      <div className="m-auto bg-white/70 backdrop-blur-[60px] rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.9)] border border-white/80 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="p-5 border-b border-white/50 flex justify-between items-center bg-white/40">
           <h3 className="font-semibold text-lg text-[#1d1d1f] flex items-center gap-2"><Shield className="w-5 h-5 text-[#86868b]"/> 管理员验证</h3>
           <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors"><X className="w-5 h-5 text-[#86868b]"/></button>
@@ -1658,9 +1750,9 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="fixed inset-0 bg-slate-50 flex items-center justify-center p-4 overflow-hidden z-0">
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-gradient-to-br from-blue-400/40 to-cyan-300/30 rounded-full blur-[100px] pointer-events-none -z-10 animate-float-1" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-to-tl from-purple-500/40 to-pink-400/30 rounded-full blur-[100px] pointer-events-none -z-10 animate-float-2" />
-      <div className="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-3xl p-10 rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.12),inset_0_2px_4px_rgba(255,255,255,0.8)] max-w-sm w-full border border-white/60 relative z-10 flex flex-col min-h-0 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.9] slide-in-from-bottom-6 duration-700 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]">
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-gradient-to-br from-blue-400/50 to-indigo-400/40 rounded-full blur-[120px] pointer-events-none -z-10 animate-float-1" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-to-tl from-teal-400/40 to-blue-500/30 rounded-full blur-[120px] pointer-events-none -z-10 animate-float-2" />
+      <div className="bg-white/40 backdrop-blur-[60px] p-10 rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.15),inset_0_2px_6px_rgba(255,255,255,0.8)] max-w-sm w-full border border-white/70 relative z-10 flex flex-col min-h-0 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mb-4 shadow-md">
             <Sparkles className="w-8 h-8 text-white" />
@@ -1753,7 +1845,7 @@ function AdminPage({ onViewRecord }) {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 animate-in fade-in duration-500">
-      <div className="bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-3xl rounded-3xl shadow-[0_16px_60px_rgba(0,0,0,0.08)] border border-white/50 overflow-hidden">
+      <div className="bg-white/40 backdrop-blur-[40px] rounded-[2rem] shadow-[0_24px_80px_rgba(0,0,0,0.08),inset_0_2px_4px_rgba(255,255,255,0.8)] border border-white/60 overflow-hidden transition-all duration-500">
         <div className="p-5 sm:p-6 border-b border-white/50 bg-white/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold text-[#1d1d1f] flex items-center gap-3">
@@ -1881,7 +1973,7 @@ function AdminPage({ onViewRecord }) {
   );
 }
 
-function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory }) {
+function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIButton }) {
   const [details, setDetails] = useState(record);
   const [loadingExtra, setLoadingExtra] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
@@ -1903,8 +1995,8 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory }) {
   }, [record.building_room]);
 
   return (
-    <div className="fixed inset-0 z-50 flex p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300 ease-out overflow-y-auto">
-      <div className="m-auto bg-gradient-to-br from-white/90 to-white/60 backdrop-blur-3xl rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.2)] border border-white/60 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.9] slide-in-from-bottom-4 duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]">
+    <div className="fixed inset-0 z-50 flex p-4 bg-black/30 backdrop-blur-md animate-in fade-in duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-y-auto">
+      <div className="m-auto bg-white/70 backdrop-blur-[60px] rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.9)] border border-white/80 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.95] slide-in-from-bottom-8 duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <div className="p-5 border-b border-white/50 flex justify-between items-center bg-white/40 shrink-0">
           <h3 className="font-semibold text-lg text-[#1d1d1f] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#007AFF]" /> 业主档案详情
@@ -2067,10 +2159,12 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory }) {
           </div>
         )}
 
-        <div className="p-5 bg-white/40 flex justify-between border-t border-white/50 shrink-0">
-          <button onClick={() => onAIAnalyze(details.building_room)} className="px-5 py-2.5 bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white rounded-xl font-medium hover:opacity-90 shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
-            <Sparkles className="w-4 h-4"/> 🧠 讓 AI 分析並草擬回覆
-          </button>
+        <div className={`p-5 bg-white/40 flex ${hideAIButton ? 'justify-end' : 'justify-between'} border-t border-white/50 shrink-0`}>
+          {!hideAIButton && (
+            <button onClick={() => onAIAnalyze(details.building_room)} className="px-5 py-2.5 bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white rounded-xl font-medium hover:opacity-90 shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
+              <Sparkles className="w-4 h-4"/> 🧠 讓 AI 分析並草擬回覆
+            </button>
+          )}
           <button onClick={onClose} className="px-6 py-2.5 bg-white border border-black/10 text-[#1d1d1f] rounded-xl font-medium hover:bg-black/5 transition-colors">關閉</button>
         </div>
       </div>

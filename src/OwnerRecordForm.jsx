@@ -37,7 +37,7 @@ const ToggleSwitch = ({ label, name, checked, onChange }) => (
       <label className="text-sm font-semibold text-[#424245]">{label}</label>
       <button
         type="button"
-        onClick={() => onChange({ target: { name, value: !checked, type: 'checkbox' } })}
+        onClick={() => onChange({ target: { name, checked: !checked, type: 'checkbox' } })}
         className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${checked ? 'bg-[#007AFF]' : 'bg-gray-300'}`}
       >
         <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -81,6 +81,8 @@ export default function OwnerRecordForm({ onUpdate }) {
   const [formData, setFormData] = useState(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [buildingZone, setBuildingZone] = useState('A');
+  const [roomNum, setRoomNum] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -111,12 +113,28 @@ export default function OwnerRecordForm({ onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.building_room) {
-      setMessage({ type: 'error', text: '房号是必填项，请填写后再提交。' });
+    const finalBuildingRoom = roomNum.trim() ? `${buildingZone}-${roomNum.trim()}` : '';
+    if (!finalBuildingRoom) {
+      setMessage({ type: 'error', text: '房号是必填项，请填写具体房号后再提交。' });
       return;
     }
     setIsLoading(true);
     setMessage({ type: '', text: '' });
+
+    const payload = {
+      ...formData,
+      building_room: finalBuildingRoom
+    };
+
+    // 💡 核心防御：清理数字字段，避免向后端发送空字符串引发 422 类型校验错误
+    const numericFields = ['area', 'age', 'ebike_count', 'tricycle_count', 'stroller_count'];
+    numericFields.forEach(field => {
+      if (payload[field] === '') {
+        payload[field] = 0;
+      } else {
+        payload[field] = Number(payload[field]);
+      }
+    });
 
     try {
       const token = localStorage.getItem('butler_auth_token');
@@ -126,7 +144,7 @@ export default function OwnerRecordForm({ onUpdate }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -136,7 +154,14 @@ export default function OwnerRecordForm({ onUpdate }) {
 
       setMessage({ type: 'success', text: '档案已成功录入/更新！' });
       setFormData(initialFormData); // 清空表单
+      setBuildingZone('A'); // 重置楼栋
+      setRoomNum('');       // 重置房号
       if (onUpdate) onUpdate(); // 触发 App.jsx 的数据刷新
+
+      // 延迟 1 秒后自动平滑滚动回容器顶部，方便直接进行下一次填写
+      setTimeout(() => {
+        document.getElementById('main-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 1000);
 
     } catch (error) {
       setMessage({ type: 'error', text: error.message });
@@ -154,7 +179,28 @@ export default function OwnerRecordForm({ onUpdate }) {
         <fieldset>
           <SectionHeader icon={FileText} title="房产基础信息" subtitle="关于房屋本身的基础数据" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="房号 (必填)" name="building_room" value={formData.building_room} onChange={handleChange} placeholder="例如：1-1-101" />
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">房号 (必填)</label>
+              <div className="flex gap-2">
+                <select
+                  value={buildingZone}
+                  onChange={(e) => setBuildingZone(e.target.value)}
+                  className="w-1/3 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                >
+                  <option value="A">A 栋</option>
+                  <option value="B">B 栋</option>
+                  <option value="C">C 栋</option>
+                  <option value="D">D 栋</option>
+                </select>
+                <input
+                  type="text"
+                  value={roomNum}
+                  onChange={(e) => setRoomNum(e.target.value)}
+                  placeholder="例如：101"
+                  className="w-2/3 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                />
+              </div>
+            </div>
             <InputField label="建筑面积 (㎡)" name="area" value={formData.area} onChange={handleChange} placeholder="例如：120.5" type="number" />
             <InputField label="交房标准" name="delivery_standard" value={formData.delivery_standard} onChange={handleChange} placeholder="例如：精装 / 毛坯" />
           </div>
