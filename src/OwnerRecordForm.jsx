@@ -1,111 +1,63 @@
 import React, { useState } from 'react';
-import { 
-  Save, Plus, Trash2, User, Home, Car, Phone, 
-  CreditCard, AlertTriangle, FileText, ClipboardList 
-} from 'lucide-react';
-
-// --- 注入全局高级表单动画样式 ---
-const formPremiumStyles = `
-  @keyframes formFadeInUp {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .premium-input-box {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .premium-input-box:focus {
-    background-color: #ffffff !important;
-    border-color: #4F46E5 !important;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15), inset 0 1px 2px rgba(0,0,0,0.01) !important;
-    transform: translateY(-1px);
-  }
-  .premium-input-box:hover:not(:focus) {
-    background-color: rgba(255,255,255,0.9) !important;
-  }
-  .premium-btn-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .premium-btn-hover:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
-  }
-`;
-
-// --- 样式组件 (移到组件外部定义，防止重新渲染导致输入框失去焦点) ---
-const SectionTitle = ({ icon: Icon, title }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '2px solid #eee', paddingBottom: '8px', marginBottom: '16px', marginTop: '24px', color: '#333' }}>
-    <Icon size={20} color="#4F46E5" />
-    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>{title}</h3>
-  </div>
-);
-
-const FormGroup = ({ label, children }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-    <label style={{ fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>{label}</label>
-    {children}
-  </div>
-);
-
-const Input = (props) => (
-  <input 
-    {...props} 
-    className="premium-input-box"
-    style={{ 
-      width: '100%', boxSizing: 'border-box',
-      padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', 
-      backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)',
-      fontSize: '0.95rem', outline: 'none',
-      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
-      ...props.style
-    }} 
-  />
-);
-
-const Select = (props) => (
-  <select 
-    {...props} 
-    className="premium-input-box"
-    style={{ 
-      width: '100%', boxSizing: 'border-box',
-      padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', 
-      backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)',
-      fontSize: '0.95rem', outline: 'none',
-      ...props.style
-    }}
-  >
-    {props.children}
-  </select>
-);
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-  gap: '16px'
-};
+import { FileText, User, Car, DollarSign, Sparkles, Wrench, Plus, Trash2, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
 
-export default function OwnerRecordForm({ onUpdate }) {
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
+const SectionHeader = ({ icon, title, subtitle }) => {
+  const Icon = icon;
+  return (
+    <div className="flex items-start gap-4 mb-5">
+      <div className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-xl flex items-center justify-center text-[#007AFF] shadow-sm border border-white/60">
+        <Icon className="w-5 h-5" />
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-[#1d1d1f]">{title}</h3>
+        <p className="text-sm text-[#86868b]">{subtitle}</p>
+      </div>
+    </div>
+  );
+};
 
-  // 初始化状态，对应后端 FullProfileInput 模型
-  const [formData, setFormData] = useState({
-    // --- 房产基础 ---
+const InputField = ({ label, name, value, onChange, placeholder, type = "text" }) => (
+  <div>
+    <label className="block text-sm font-semibold text-[#424245] mb-2">{label}</label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+    />
+  </div>
+);
+
+const ToggleSwitch = ({ label, name, checked, onChange }) => (
+    <div className="flex items-center justify-between bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+      <label className="text-sm font-semibold text-[#424245]">{label}</label>
+      <button
+        type="button"
+        onClick={() => onChange({ target: { name, value: !checked, type: 'checkbox' } })}
+        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${checked ? 'bg-[#007AFF]' : 'bg-gray-300'}`}
+      >
+        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+      </button>
+    </div>
+);
+
+
+export default function OwnerRecordForm({ onUpdate }) {
+  const initialFormData = {
     building_room: '',
-    area: 0,
+    area: '',
     delivery_standard: '毛坯',
-    
-    // --- 业主基础 ---
     owner_name: '',
-    age: 0,
+    age: '',
     gender: '男',
     phone: '',
     wechat: '',
     political_status: '群众',
-    is_resident: false,
-    
-    // --- 生活与车辆 ---
+    is_resident: true,
     pets: '',
     car_plate: '',
     is_new_energy: false,
@@ -113,87 +65,61 @@ export default function OwnerRecordForm({ onUpdate }) {
     ebike_count: 0,
     tricycle_count: 0,
     stroller_count: 0,
-    
-    // --- 对接与财务 ---
     contact_person: '',
     relationship: '本人',
     contact_phone: '',
     payer: '',
     payment_method: '微信',
     payment_cycle: '按年',
-    
-    // --- 客户画像 ---
-    customer_level: '普通',
+    // --- 核心修改：客户等级默认为 C ---
+    customer_level: 'C',
     opinion_tags: '',
     negative_info: '',
-    
-    // --- 报修记录 (列表) ---
-    repair_history: []
-  });
+    repair_history: [],
+  };
 
-  // 通用输入处理
+  const [formData, setFormData] = useState(initialFormData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    let finalValue = value;
-
-    // 处理数值类型
-    if (type === 'number') {
-      finalValue = value === '' ? 0 : parseFloat(value);
-    }
-    // 处理布尔类型
-    if (type === 'checkbox') {
-      finalValue = checked;
-    }
-
     setFormData(prev => ({
       ...prev,
-      [name]: finalValue
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  // 报修记录处理
-  const handleRepairChange = (index, field, value) => {
-    const newHistory = [...formData.repair_history];
-    newHistory[index][field] = value;
-    setFormData(prev => ({ ...prev, repair_history: newHistory }));
+  const handleRepairChange = (index, e) => {
+    const { name, value } = e.target;
+    const newRepairs = [...formData.repair_history];
+    newRepairs[index][name] = value;
+    setFormData(prev => ({ ...prev, repair_history: newRepairs }));
   };
 
   const addRepair = () => {
     setFormData(prev => ({
       ...prev,
-      repair_history: [
-        ...prev.repair_history,
-        { 
-          report_time: new Date().toISOString().split('T')[0], 
-          item: '', 
-          handler: '', 
-          process_detail: '', 
-          status: '处理中', 
-          callback_result: '',
-          completion_record: '',
-          completion_time: ''
-        }
-      ]
+      repair_history: [...prev.repair_history, { report_time: new Date().toISOString().slice(0, 16), item: '', status: '处理中' }]
     }));
   };
 
   const removeRepair = (index) => {
-    const newHistory = formData.repair_history.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, repair_history: newHistory }));
+    const newRepairs = formData.repair_history.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, repair_history: newRepairs }));
   };
 
-  // 提交表单
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage({ text: '', type: '' });
+    if (!formData.building_room) {
+      setMessage({ type: 'error', text: '房号是必填项，请填写后再提交。' });
+      return;
+    }
+    setIsLoading(true);
+    setMessage({ type: '', text: '' });
 
     try {
       const token = localStorage.getItem('butler_auth_token');
-      if (!token) {
-        throw new Error('未检测到登录凭证，请先登录');
-      }
-
       const response = await fetch(`${API_BASE_URL}/api/records`, {
         method: 'POST',
         headers: {
@@ -203,282 +129,148 @@ export default function OwnerRecordForm({ onUpdate }) {
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.message || '提交失败');
+        const errData = await response.json();
+        throw new Error(errData.detail || '提交失败，请检查网络或联系管理员。');
       }
 
-      setMessage({ text: '✅ 档案录入成功！', type: 'success' });
-      if (onUpdate) onUpdate(); // 通知全局系统刷新右侧的工单待处理列表
-      
-      // 提交成功后平滑滚动回顶部，方便继续进行评估或下一次提交
-      const scrollArea = document.getElementById('main-scroll-area');
-      if (scrollArea) {
-        scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      setMessage({ type: 'success', text: '档案已成功录入/更新！' });
+      setFormData(initialFormData); // 清空表单
+      if (onUpdate) onUpdate(); // 触发 App.jsx 的数据刷新
 
     } catch (error) {
-      setMessage({ text: `❌ 错误: ${error.message}`, type: 'error' });
+      setMessage({ type: 'error', text: error.message });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     }
   };
 
   return (
-    <div style={{
-      animation: 'formFadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards', 
-      maxWidth: '900px', margin: '0 auto', padding: '32px', 
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 100%)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)', 
-      borderRadius: '24px', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255,255,255,0.8)', border: '1px solid rgba(255, 255, 255, 0.6)' 
-    }}>
-      <style>{formPremiumStyles}</style>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px', textAlign: 'center', color: '#111827' }}>
-        📝 业主档案全维度录入
-      </h1>
+    <div className="max-w-4xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-10">
+        
+        {/* 房产基础信息 */}
+        <fieldset>
+          <SectionHeader icon={FileText} title="房产基础信息" subtitle="关于房屋本身的基础数据" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InputField label="房号 (必填)" name="building_room" value={formData.building_room} onChange={handleChange} placeholder="例如：1-1-101" />
+            <InputField label="建筑面积 (㎡)" name="area" value={formData.area} onChange={handleChange} placeholder="例如：120.5" type="number" />
+            <InputField label="交房标准" name="delivery_standard" value={formData.delivery_standard} onChange={handleChange} placeholder="例如：精装 / 毛坯" />
+          </div>
+        </fieldset>
 
-      {message.text && (
-        <div style={{ 
-          padding: '12px', marginBottom: '20px', borderRadius: '6px', 
-          backgroundColor: message.type === 'error' ? '#FEE2E2' : '#D1FAE5',
-          color: message.type === 'error' ? '#B91C1C' : '#065F46'
-        }}>
-          {message.text}
-        </div>
-      )}
+        {/* 业主基础信息 */}
+        <fieldset>
+          <SectionHeader icon={User} title="业主基础信息" subtitle="业主或家庭成员的个人情况" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <InputField label="业主姓名" name="owner_name" value={formData.owner_name} onChange={handleChange} placeholder="输入业主姓名" />
+            <InputField label="手机号" name="phone" value={formData.phone} onChange={handleChange} placeholder="输入联系电话" />
+            <InputField label="年龄" name="age" value={formData.age} onChange={handleChange} type="number" />
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">性别</label>
+              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+                <option>男</option>
+                <option>女</option>
+              </select>
+            </div>
+            <InputField label="政治面貌" name="political_status" value={formData.political_status} onChange={handleChange} placeholder="例如：党员 / 群众" />
+            <ToggleSwitch label="是否常住" name="is_resident" checked={formData.is_resident} onChange={handleChange} />
+          </div>
+        </fieldset>
 
-      <form onSubmit={handleSubmit}>
-        {/* 1. 房产基础 */}
-        <SectionTitle icon={Home} title="房产基础信息" />
-        <div style={gridStyle}>
-          <FormGroup label="* 楼栋房号">
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-              <Select 
-                value={(formData.building_room || '').split('-')[0] || 'A'}
-                onChange={(e) => {
-                  const parts = (formData.building_room || '').split('-');
-                  const room = parts[1] || '';
-                  setFormData(prev => ({ ...prev, building_room: `${e.target.value}-${room}` }));
-                }}
-                style={{ width: '85px', flexShrink: 0, padding: '10px 8px' }}
+        {/* 生活与车辆 */}
+        <fieldset>
+          <SectionHeader icon={Car} title="生活与车辆" subtitle="家庭生活习惯及车辆信息" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <InputField label="宠物情况" name="pets" value={formData.pets} onChange={handleChange} placeholder="例如：金毛犬一只" />
+            <InputField label="车牌号" name="car_plate" value={formData.car_plate} onChange={handleChange} placeholder="例如：京A88888" />
+            <ToggleSwitch label="是否新能源车" name="is_new_energy" checked={formData.is_new_energy} onChange={handleChange} />
+            <InputField label="电动车数量" name="ebike_count" value={formData.ebike_count} onChange={handleChange} type="number" />
+            <InputField label="三轮车数量" name="tricycle_count" value={formData.tricycle_count} onChange={handleChange} type="number" />
+            <InputField label="儿童车数量" name="stroller_count" value={formData.stroller_count} onChange={handleChange} type="number" />
+          </div>
+        </fieldset>
+
+        {/* 客户画像 */}
+        <fieldset>
+          <SectionHeader icon={Sparkles} title="客户画像" subtitle="用于定义客户价值与沟通策略" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">客户等级</label>
+              {/* --- 核心修改：客户等级选项已更新为 S/A/B/C --- */}
+              <select
+                name="customer_level"
+                value={formData.customer_level}
+                onChange={handleChange}
+                className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
               >
-                <option value="A">A栋</option>
-                <option value="B">B栋</option>
-                <option value="C">C栋</option>
-                <option value="D">D栋</option>
-              </Select>
-              <Input 
-                placeholder="房号 (如 101)" 
-                value={(formData.building_room || '').split('-')[1] || ''}
-                onChange={(e) => {
-                  const parts = (formData.building_room || '').split('-');
-                  const building = parts[0] || 'A';
-                  setFormData(prev => ({ ...prev, building_room: `${building}-${e.target.value}` }));
-                }}
-                required
-                style={{ flex: 1, minWidth: 0 }}
+                <option value="S">S - 核心价值</option>
+                <option value="A">A - 重点关注</option>
+                <option value="B">B - 潜力客户</option>
+                <option value="C">C - 普通客户</option>
+              </select>
+            </div>
+            <InputField label="舆论标签" name="opinion_tags" value={formData.opinion_tags} onChange={handleChange} placeholder="例如：社区活跃分子、意见领袖" />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-red-600 mb-2">负向/敏感信息</label>
+              <textarea
+                name="negative_info"
+                value={formData.negative_info}
+                onChange={handleChange}
+                rows="3"
+                placeholder="记录任何需要特别注意的负面或敏感信息..."
+                className="w-full bg-red-50/30 backdrop-blur-md border border-red-200/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-400/30 focus:bg-white transition-all text-base sm:text-sm text-red-800 placeholder:text-red-400 resize-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
               />
             </div>
-          </FormGroup>
-          <FormGroup label="建筑面积 (㎡)">
-            <Input type="number" name="area" value={formData.area} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="交房标准">
-            <Select name="delivery_standard" value={formData.delivery_standard} onChange={handleChange}>
-              <option value="毛坯">毛坯</option>
-              <option value="简装">简装</option>
-              <option value="精装">精装</option>
-            </Select>
-          </FormGroup>
-        </div>
-
-        {/* 2. 业主基础 */}
-        <SectionTitle icon={User} title="业主基础信息" />
-        <div style={gridStyle}>
-          <FormGroup label="业主姓名">
-            <Input name="owner_name" value={formData.owner_name} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="手机号">
-            <Input name="phone" value={formData.phone} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="微信号">
-            <Input name="wechat" value={formData.wechat} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="年龄">
-            <Input type="number" name="age" value={formData.age} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="性别">
-            <Select name="gender" value={formData.gender} onChange={handleChange}>
-              <option value="男">男</option>
-              <option value="女">女</option>
-            </Select>
-          </FormGroup>
-          <FormGroup label="政治面貌">
-            <Select name="political_status" value={formData.political_status} onChange={handleChange}>
-              <option value="群众">群众</option>
-              <option value="中共党员">中共党员</option>
-              <option value="中共预备党员">中共预备党员</option>
-              <option value="共青团员">共青团员</option>
-              <option value="民主党派">民主党派</option>
-              <option value="无党派人士">无党派人士</option>
-            </Select>
-          </FormGroup>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: '28px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-              <input type="checkbox" name="is_resident" checked={formData.is_resident} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
-              <span style={{ fontWeight: '500' }}>是否常住 (自住)</span>
-            </label>
           </div>
-        </div>
+        </fieldset>
 
-        {/* 3. 生活与车辆 */}
-        <SectionTitle icon={Car} title="车辆与生活设施" />
-        <div style={gridStyle}>
-          <FormGroup label="车牌号">
-            <Input name="car_plate" value={formData.car_plate} onChange={handleChange} placeholder="苏A..." />
-          </FormGroup>
-          <FormGroup label="宠物情况">
-            <Input name="pets" value={formData.pets} onChange={handleChange} placeholder="如：金毛一只" />
-          </FormGroup>
-          <FormGroup label="电动自行车数量">
-            <Input type="number" name="ebike_count" value={formData.ebike_count} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="三轮车数量">
-            <Input type="number" name="tricycle_count" value={formData.tricycle_count} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="儿童车数量">
-            <Input type="number" name="stroller_count" value={formData.stroller_count} onChange={handleChange} />
-          </FormGroup>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" name="is_new_energy" checked={formData.is_new_energy} onChange={handleChange} />
-              <span>新能源车辆</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" name="use_charging_pile" checked={formData.use_charging_pile} onChange={handleChange} />
-              <span>使用充电桩</span>
-            </label>
-          </div>
-        </div>
-
-        {/* 4. 对接与财务 */}
-        <SectionTitle icon={Phone} title="对接与财务" />
-        <div style={gridStyle}>
-          <FormGroup label="平时对接人">
-            <Input name="contact_person" value={formData.contact_person} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="关系">
-            <Input name="relationship" value={formData.relationship} onChange={handleChange} placeholder="如：保姆、租客" />
-          </FormGroup>
-          <FormGroup label="对接电话">
-            <Input name="contact_phone" value={formData.contact_phone} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="缴费人">
-            <Input name="payer" value={formData.payer} onChange={handleChange} />
-          </FormGroup>
-          <FormGroup label="缴费周期">
-            <Select name="payment_cycle" value={formData.payment_cycle} onChange={handleChange}>
-              <option value="按月">按月</option>
-              <option value="按季">按季</option>
-              <option value="按年">按年</option>
-            </Select>
-          </FormGroup>
-        </div>
-
-        {/* 5. 客户画像 */}
-        <SectionTitle icon={ClipboardList} title="客户画像管理" />
-        <div style={{ ...gridStyle, gridTemplateColumns: '1fr 1fr' }}>
-          <FormGroup label="客户等级">
-            <Select name="customer_level" value={formData.customer_level} onChange={handleChange} style={{ width: '100%' }}>
-              <option value="普通">普通</option>
-              <option value="VIP">VIP</option>
-              <option value="重点关注">重点关注</option>
-              <option value="黑名单">黑名单</option>
-            </Select>
-          </FormGroup>
-          <FormGroup label="舆论标签">
-            <Input name="opinion_tags" value={formData.opinion_tags} onChange={handleChange} placeholder="如：爱投诉、喜静、养生" />
-          </FormGroup>
-        </div>
-        <div style={{ marginTop: '16px' }}>
-          <FormGroup label="⚠️ 负向/敏感信息 (慎填)">
-            <textarea 
-              name="negative_info" 
-              value={formData.negative_info} 
-              onChange={handleChange}
-              rows={3}
-              className="premium-input-box"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.95rem', backgroundColor: 'rgba(255,255,255,0.7)' }} 
-            />
-          </FormGroup>
-        </div>
-
-        {/* 6. 报事报修记录 */}
-        <SectionTitle icon={AlertTriangle} title="历史报事/报修记录" />
-        
-        {formData.repair_history.map((item, index) => (
-          <div key={index} style={{ backgroundColor: '#F9FAFB', padding: '16px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #E5E7EB', position: 'relative' }}>
-            <button 
-              type="button" 
-              onClick={() => removeRepair(index)}
-              style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}
-            >
-              <Trash2 size={18} />
+        {/* 报修记录 */}
+        <fieldset>
+          <SectionHeader icon={Wrench} title="关联报修记录" subtitle="可同时录入该业主的历史或当前报修工单" />
+          <div className="space-y-4">
+            {formData.repair_history.map((repair, index) => (
+              <div key={index} className="bg-white/60 p-4 rounded-2xl border border-white/60 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <InputField label="报修时间" name="report_time" value={repair.report_time} onChange={(e) => handleRepairChange(index, e)} type="datetime-local" />
+                <InputField label="报修项目" name="item" value={repair.item} onChange={(e) => handleRepairChange(index, e)} placeholder="例如：客厅灯不亮" />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-semibold text-[#424245] mb-2">状态</label>
+                    <select name="status" value={repair.status} onChange={(e) => handleRepairChange(index, e)} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+                      <option>处理中</option>
+                      <option>已完成</option>
+                    </select>
+                  </div>
+                  <button type="button" onClick={() => removeRepair(index)} className="p-3 text-red-500 hover:bg-red-100 rounded-xl transition-colors h-[46px] mt-auto mb-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button type="button" onClick={addRepair} className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#007AFF]/30 text-[#007AFF] hover:bg-[#007AFF]/10 rounded-xl py-3 transition-colors font-medium">
+              <Plus className="w-4 h-4" /> 添加一条报修记录
             </button>
-            <div style={gridStyle}>
-              <FormGroup label="报事时间">
-                <Input type="date" value={item.report_time} onChange={(e) => handleRepairChange(index, 'report_time', e.target.value)} />
-              </FormGroup>
-              <FormGroup label="报事项目">
-                <Input value={item.item} onChange={(e) => handleRepairChange(index, 'item', e.target.value)} placeholder="如：漏水" />
-              </FormGroup>
-              <FormGroup label="接单人">
-                <Input value={item.handler} onChange={(e) => handleRepairChange(index, 'handler', e.target.value)} />
-              </FormGroup>
-              <FormGroup label="状态">
-                <Select value={item.status} onChange={(e) => handleRepairChange(index, 'status', e.target.value)}>
-                  <option value="处理中">处理中</option>
-                  <option value="已完成">已完成</option>
-                </Select>
-              </FormGroup>
-              <FormGroup label="维修详情">
-                <Input value={item.process_detail} onChange={(e) => handleRepairChange(index, 'process_detail', e.target.value)} />
-              </FormGroup>
-              <FormGroup label="完成记录">
-                <Input value={item.completion_record} onChange={(e) => handleRepairChange(index, 'completion_record', e.target.value)} />
-              </FormGroup>
-              <FormGroup label="回访结果">
-                <Input value={item.callback_result} onChange={(e) => handleRepairChange(index, 'callback_result', e.target.value)} />
-              </FormGroup>
-            </div>
           </div>
-        ))}
-        
-        <button 
-          type="button" 
-          onClick={addRepair}
-          className="premium-btn-hover"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4F46E5', backgroundColor: 'rgba(79, 70, 229, 0.05)', border: '1px dashed rgba(79, 70, 229, 0.4)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', margin: '0 auto', marginBottom: '24px', fontWeight: '500' }}
-        >
-          <Plus size={18} /> 添加一条报修记录
-        </button>
+        </fieldset>
 
-        {/* 提交按钮 */}
-        <div style={{ textAlign: 'center', marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="premium-btn-hover"
-            style={{ 
-              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white', border: 'none', 
-              padding: '12px 40px', borderRadius: '8px', fontSize: '1rem', 
-              fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              opacity: loading ? 0.7 : 1
-            }}
+        {/* 提交按钮和消息提示 */}
+        <div className="pt-6 border-t border-black/5 flex flex-col items-center">
+          {message.text && (
+            <div className={`mb-4 w-full max-w-md text-center p-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {message.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+              {message.text}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full max-w-xs bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white font-semibold py-4 rounded-2xl shadow-lg shadow-blue-500/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait active:scale-95"
           >
-            <Save size={20} />
-            {loading ? '正在保存...' : '保存完整档案'}
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            {isLoading ? '正在提交...' : '确认录入'}
           </button>
         </div>
       </form>
