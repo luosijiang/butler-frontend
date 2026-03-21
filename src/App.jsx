@@ -220,7 +220,13 @@ export default function App() {
     localStorage.setItem('butler_chat_history', JSON.stringify(chatHistory));
     
     const token = localStorage.getItem('butler_auth_token');
-    if (!isLoggedIn || !token) return; 
+    // 核心修复：如果 AI 正在流式输出（isLoading），则暂停发送同步请求，防止瞬间并发大量请求导致 cpolar 阻断报错
+    if (!isLoggedIn || !token || isLoading) return; 
+
+    // ⚡ 核心提速与防御优化：只同步当前活跃的对话。避免随着历史增多，全量同步造成 JSON 体积过大，
+    // 触发内网穿透代理 (cpolar) 的 Payload 限制，导致直接被掐断返回 CORS 和 HTTP2 报错。
+    const activeChat = chatHistory.find(c => c.id === activeChatId);
+    if (!activeChat) return;
 
     const timer = setTimeout(() => {
       fetch(`${API_BASE_URL}/api/history/sync`, {
@@ -229,12 +235,12 @@ export default function App() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(chatHistory)
+        body: JSON.stringify([activeChat])
       }).catch(err => console.error("自动保存失败:", err));
-    }, 1000);
+    }, 2000); // 增加防抖延迟到 2 秒，减轻内网穿透带宽压力
 
     return () => clearTimeout(timer);
-  }, [chatHistory, isLoggedIn]);
+  }, [chatHistory, isLoggedIn, isLoading, activeChatId]);
 
   useEffect(() => {
     setChatHistory(prev => prev.map(chat => 
