@@ -202,7 +202,19 @@ export default function OwnerRecordForm({ onUpdate }) {
               </div>
             </div>
             <InputField label="建筑面积 (㎡)" name="area" value={formData.area} onChange={handleChange} placeholder="例如：120.5" type="number" />
-            <InputField label="交房标准" name="delivery_standard" value={formData.delivery_standard} onChange={handleChange} placeholder="例如：精装 / 毛坯" />
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">交房标准</label>
+              <select
+                name="delivery_standard"
+                value={formData.delivery_standard}
+                onChange={handleChange}
+                className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+              >
+                <option value="毛坯">毛坯</option>
+                <option value="简装">简装</option>
+                <option value="精装">精装</option>
+              </select>
+            </div>
           </div>
         </fieldset>
 
