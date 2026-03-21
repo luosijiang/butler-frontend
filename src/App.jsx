@@ -1008,25 +1008,27 @@ export default function App() {
 
       <aside className="w-[300px] bg-white/30 border-l border-white/50 p-6 hidden xl:flex flex-col shrink-0 z-20">
          <div className="space-y-4 flex-1 flex flex-col min-h-0">
-            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 shrink-0 hover:-translate-y-1 transition-transform duration-500 ease-out">
-               <div className="text-[10px] text-[#86868b] font-bold uppercase mb-4 tracking-wider flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-[#007AFF]"></div> 今日概览
+            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 shrink-0 hover:-translate-y-1 transition-transform duration-500 ease-out relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#007AFF]/15 to-transparent rounded-full blur-2xl -z-10" />
+               <div className="text-[11px] text-[#424245] font-extrabold uppercase mb-4 tracking-wider flex items-center gap-2">
+                 <Activity className="w-3.5 h-3.5 text-[#007AFF]" /> 今日概览
                </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="bg-[#F2F2F7] rounded-xl p-3 text-center">
-                    <div className="text-2xl font-semibold text-[#1d1d1f]">{currentUser.pending}</div>
-                    <div className="text-xs text-[#86868b] mt-1">待处理</div>
+               <div className="grid grid-cols-2 gap-3">
+                 <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-100/50 rounded-2xl p-3.5 text-center shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_16px_rgba(249,115,22,0.1)] group">
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-orange-500 to-red-500 group-hover:scale-105 transition-transform">{currentUser.pending}</div>
+                    <div className="text-[11px] font-bold text-orange-600/80 mt-1.5 uppercase tracking-wide">待处理</div>
                  </div>
-                 <div className="bg-[#F2F2F7] rounded-xl p-3 text-center">
-                    <div className="text-2xl font-semibold text-[#007AFF]">{currentUser.completed}</div>
-                    <div className="text-xs text-[#007AFF] mt-1">已完成</div>
+                 <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100/50 rounded-2xl p-3.5 text-center shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_16px_rgba(0,122,255,0.1)] group">
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-[#007AFF] to-[#0051e3] group-hover:scale-105 transition-transform">{currentUser.completed}</div>
+                    <div className="text-[11px] font-bold text-[#007AFF]/80 mt-1.5 uppercase tracking-wide">已完成</div>
                  </div>
                </div>
             </div>
 
-            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 flex flex-col min-h-0 flex-1 hover:-translate-y-1 transition-transform duration-500 ease-out">
-               <div className="text-[10px] text-[#86868b] font-bold uppercase mb-4 tracking-wider flex items-center gap-2 shrink-0">
-                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div> 待处理工单
+            <div className="bg-white/50 backdrop-blur-2xl p-5 rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,0.9)] border border-white/80 flex flex-col min-h-0 flex-1 hover:-translate-y-1 transition-transform duration-500 ease-out relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-orange-500/10 to-transparent rounded-full blur-2xl -z-10" />
+               <div className="text-[11px] text-[#424245] font-extrabold uppercase mb-4 tracking-wider flex items-center gap-2 shrink-0">
+                 <Bell className="w-3.5 h-3.5 text-orange-500" /> 待处理工单
                </div>
                <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
                  {/* 核心修改：利用 sort 将工单按时间升序排列（越早越靠前） */}
@@ -1034,21 +1036,28 @@ export default function App() {
                    // 计算是否超过 24 小时 (毫秒)
                    const isUrgent = (new Date() - new Date(order.report_time.replace(/-/g, '/'))) > 24 * 60 * 60 * 1000;
                    return (
-                     <div key={order.id} onClick={() => setMode('repair_manage')} className={`p-3 rounded-2xl border shadow-sm transition-all cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-95 ${isUrgent ? 'bg-gradient-to-r from-red-50/90 to-white/80 border-red-200' : 'bg-gradient-to-r from-white/70 to-white/40 border-white/60'}`}>
-                        <div className="flex justify-between items-start mb-1.5">
-                          <span className={`font-semibold text-sm ${isUrgent ? 'text-red-700' : 'text-[#1d1d1f]'}`}>{order.building_room}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-lg font-medium ${isUrgent ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{order.status}</span>
+                     <div key={order.id} onClick={() => setMode('repair_manage')} className={`p-3.5 rounded-[1.2rem] border shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all cursor-pointer hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden ${isUrgent ? 'bg-gradient-to-br from-red-50 to-white border-red-100' : 'bg-white/80 border-black/[0.03] hover:border-blue-100'}`}>
+                        {isUrgent && <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />}
+                        {!isUrgent && <div className="absolute top-0 left-0 w-1 h-full bg-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                        <div className="flex justify-between items-start mb-2 pl-1">
+                          <span className={`font-bold text-[13px] ${isUrgent ? 'text-red-700' : 'text-[#1d1d1f]'}`}>{order.building_room}</span>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm ${isUrgent ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' : 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200/50'}`}>{order.status}</span>
                         </div>
-                        <div className={`text-xs font-medium mb-2 truncate ${isUrgent ? 'text-red-600' : 'text-[#424245]'}`}>{order.item}</div>
-                        <div className={`text-[10px] flex items-center gap-1.5 ${isUrgent ? 'text-red-500 font-medium' : 'text-[#86868b]'}`}>
-                          {isUrgent && <AlertTriangle className="w-3.5 h-3.5" />}
-                          {order.report_time}
-                          {isUrgent && <span className="bg-red-500 text-white px-1.5 py-[1px] rounded text-[8px] tracking-wider shadow-sm">超24H</span>}
+                        <div className={`text-[12px] font-semibold mb-2.5 truncate pl-1 ${isUrgent ? 'text-red-600' : 'text-[#424245]'}`}>{order.item}</div>
+                        <div className={`text-[10px] flex items-center justify-between pl-1 ${isUrgent ? 'text-red-500 font-medium' : 'text-[#86868b]'}`}>
+                          <div className="flex items-center gap-1.5">
+                            {isUrgent ? <AlertTriangle className="w-3 h-3" /> : <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+                            {order.report_time}
+                          </div>
+                          {isUrgent && <span className="text-[9px] font-bold tracking-wider">超24H</span>}
                         </div>
                      </div>
                    );
                  }) : (
-                   <div className="text-center text-xs text-[#86868b] py-4">暂无待处理工单</div>
+                   <div className="text-center text-xs text-[#86868b] py-8 flex flex-col items-center justify-center gap-2 bg-black/[0.02] rounded-2xl border border-dashed border-black/5">
+                     <CheckCircle className="w-6 h-6 text-green-500/50" />
+                     暂无待处理工单
+                   </div>
                  )}
                </div>
             </div>
