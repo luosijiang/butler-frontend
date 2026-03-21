@@ -1448,6 +1448,7 @@ function OwnerDynamicsPage() {
   const [selectedOwnerDetails, setSelectedOwnerDetails] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [expandedHistId, setExpandedHistId] = useState(null); // 控制展开的卡片
+  const [expandedField, setExpandedField] = useState(null); // 控制展开的具体字段小卡片
 
   // 1. 获取所有业主列表
   useEffect(() => {
@@ -1472,6 +1473,7 @@ function OwnerDynamicsPage() {
     setLoadingHistory(true);
     setExpandedHistId(null);
     setSelectedOwnerDetails(null);
+    setExpandedField(null);
     const token = localStorage.getItem('butler_auth_token');
     fetch(`${API_BASE_URL}/api/records/${encodeURIComponent(selectedRoom)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -1614,13 +1616,14 @@ function OwnerDynamicsPage() {
                                     const isEmpty = displayVal === '无' || displayVal === '0';
                                     const isNegative = key === 'negative_info';
                                     const isCustomerLevel = key === 'customer_level';
+                                    const isExpanded = expandedField === key;
                                     
                                     let colSpanClass = 'col-span-1';
                                     if (isNegative) colSpanClass = 'col-span-2 sm:col-span-3 lg:col-span-4';
                                     else if (key === 'opinion_tags') colSpanClass = 'col-span-2 sm:col-span-2 lg:col-span-3';
                                     
                                     return (
-                                        <div key={key} className={`flex flex-col bg-white/90 backdrop-blur-sm px-3.5 py-3 rounded-[1rem] border ${isNegative && val ? 'border-red-200 bg-red-50' : 'border-black/[0.03]'} shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 ${colSpanClass}`}>
+                                        <div key={key} onClick={() => setExpandedField(isExpanded ? null : key)} className={`flex flex-col bg-white/90 backdrop-blur-sm px-3.5 py-3 rounded-[1rem] border ${isNegative && val ? 'border-red-200 bg-red-50' : isExpanded ? 'border-[#007AFF]/30 bg-blue-50/30' : 'border-black/[0.03]'} shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer ${isExpanded ? 'col-span-2 sm:col-span-3 lg:col-span-4 ring-2 ring-[#007AFF]/20 z-10' : colSpanClass}`} title={isExpanded ? "点击折叠" : "点击展开完整信息"}>
                                             <span className={`text-[11px] font-bold mb-1.5 tracking-wide ${isNegative && val ? 'text-red-500' : 'text-[#86868b]'}`}>{fieldLabels[key]}</span>
                                             {isCustomerLevel ? (
                                                 <span className={`w-fit px-2.5 py-0.5 rounded-md text-[12px] font-bold shadow-sm ${
@@ -1630,7 +1633,7 @@ function OwnerDynamicsPage() {
                                                   'bg-[#F2F2F7] text-[#424245] border border-black/5'
                                                 }`}>{displayVal}</span>
                                             ) : (
-                                                <span className={`text-[13px] ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} ${(isNegative || key === 'opinion_tags') ? 'line-clamp-2 leading-relaxed' : 'truncate'} block`} title={displayVal}>
+                                                <span className={`text-[13px] ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} ${isExpanded ? 'break-words whitespace-pre-wrap' : (isNegative || key === 'opinion_tags') ? 'line-clamp-2 leading-relaxed' : 'truncate'} block`}>
                                                   {displayVal}
                                                 </span>
                                             )}
