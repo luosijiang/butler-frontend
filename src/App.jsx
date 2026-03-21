@@ -1270,7 +1270,10 @@ function RepairManagePage({ onUpdate }) {
                             <span className="bg-green-100/80 text-green-700 px-1.5 py-[1px] rounded text-xs font-medium">历时 {calculateDuration(record.report_time, record.completion_time)}</span>
                           </div>
                         )}
-                        <div className="border-t border-black/5 my-2 pt-2 flex items-center gap-2"><span className="font-medium text-[#007AFF]">接单人:</span> {record.handler || '-'}</div>
+                        <div className="border-t border-black/5 my-2 pt-2 flex items-center gap-4 flex-wrap">
+                           <div><span className="font-medium text-[#424245]">录入人:</span> {record.operator || localStorage.getItem('butler_username') || '未知'}</div>
+                           <div><span className="font-medium text-[#007AFF]">接单人:</span> {record.handler || '-'}</div>
+                        </div>
                         {record.process_detail && <div className="text-[#424245] line-clamp-3 leading-relaxed"><span className="font-medium">详情:</span> {record.process_detail}</div>}
                       </div>
                       
@@ -1324,6 +1327,7 @@ function RepairManagePage({ onUpdate }) {
 
 function RepairEditModal({ record, onClose, onSuccess }) {
   const [status, setStatus] = useState(record.status || '处理中');
+  const [handler, setHandler] = useState(record.handler || '');
   const [processDetail, setProcessDetail] = useState(record.process_detail || '');
   const [callbackResult, setCallbackResult] = useState(record.callback_result || '');
   const [completionRecord, setCompletionRecord] = useState(record.completion_record || '');
@@ -1339,7 +1343,7 @@ function RepairEditModal({ record, onClose, onSuccess }) {
       const res = await fetch(`${API_BASE_URL}/api/repair_records/${record.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status, process_detail: processDetail || undefined, callback_result: callbackResult || undefined, completion_record: completionRecord || undefined })
+        body: JSON.stringify({ status, handler: handler || undefined, process_detail: processDetail || undefined, callback_result: callbackResult || undefined, completion_record: completionRecord || undefined })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || data.message || '更新失败');
@@ -1370,7 +1374,10 @@ function RepairEditModal({ record, onClose, onSuccess }) {
                 {record.owner_name && <div><span className="text-[#86868b] mr-1">业主:</span><span className="font-medium">{record.owner_name}</span></div>}
                 {record.phone && <div><span className="text-[#86868b] mr-1">电话:</span><span className="font-medium">{record.phone}</span></div>}
               </div>
-              <div><span className="text-[#86868b] mr-1">项目:</span><span className="font-medium">{record.item}</span></div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                <div><span className="text-[#86868b] mr-1">项目:</span><span className="font-medium">{record.item}</span></div>
+                <div><span className="text-[#86868b] mr-1">录入人:</span><span className="font-medium">{record.operator || localStorage.getItem('butler_username') || '未知'}</span></div>
+              </div>
             </div>
 
             <div>
@@ -1384,6 +1391,10 @@ function RepairEditModal({ record, onClose, onSuccess }) {
                 <option value="处理中">处理中</option>
                 <option value="已完成">已完成</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">接单人 (维修人)</label>
+              <input type="text" value={handler} onChange={e => setHandler(e.target.value)} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]" placeholder="输入负责维修此工单的接单人姓名..." />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#424245] mb-2">补充处理详情</label>
@@ -1434,6 +1445,7 @@ function OwnerDynamicsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomHistory, setRoomHistory] = useState([]);
+  const [selectedOwnerDetails, setSelectedOwnerDetails] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [expandedHistId, setExpandedHistId] = useState(null); // 控制展开的卡片
 
@@ -1459,6 +1471,7 @@ function OwnerDynamicsPage() {
     if (!selectedRoom) return;
     setLoadingHistory(true);
     setExpandedHistId(null);
+    setSelectedOwnerDetails(null);
     const token = localStorage.getItem('butler_auth_token');
     fetch(`${API_BASE_URL}/api/records/${encodeURIComponent(selectedRoom)}`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -1466,6 +1479,7 @@ function OwnerDynamicsPage() {
       .then(res => res.json())
       .then(data => {
         setRoomHistory(data.profile_history || []);
+        setSelectedOwnerDetails(data);
         setLoadingHistory(false);
       })
       .catch(err => {
@@ -1546,10 +1560,97 @@ function OwnerDynamicsPage() {
                 {loadingHistory ? (
                   <div className="text-center text-[#86868b] text-sm py-10 flex flex-col items-center">
                     <Loader2 className="w-6 h-6 animate-spin mb-3 text-[#007AFF]"/>
-                    正在加载轨迹...
+                    正在加载数据...
                   </div>
-                ) : roomHistory.length > 0 ? (
-                  <div className="relative border-l border-[#007AFF]/20 ml-4 space-y-8">
+                ) : (
+                  <div className="animate-in fade-in duration-500">
+                    {/* 优化：分类分组显示业主全部最新信息，排版更加精美 */}
+                    {selectedOwnerDetails && (
+                      <div className="bg-white/40 backdrop-blur-3xl border border-white/80 p-5 sm:p-7 rounded-[2rem] mb-8 shadow-[0_12px_40px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#007AFF]/10 to-purple-500/10 rounded-full blur-3xl -z-10" />
+                        
+                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/60">
+                          <h4 className="text-base font-extrabold text-[#1d1d1f] flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#007AFF] to-[#0051e3] flex items-center justify-center shadow-lg text-white">
+                              <User className="w-5 h-5" />
+                            </div>
+                            业主全维档案
+                          </h4>
+                          <div className="text-xs font-bold text-[#007AFF] bg-white px-3 py-1.5 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-blue-50/50">
+                             {selectedOwnerDetails.building_room}
+                          </div>
+                        </div>
+
+                        <div className="space-y-5">
+                          {[
+                            {
+                              title: "基础与联系", icon: User, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-200/50",
+                              keys: ['owner_name', 'phone', 'age', 'gender', 'political_status', 'wechat', 'contact_person', 'relationship', 'contact_phone']
+                            },
+                            {
+                              title: "房产与生活", icon: FileText, color: "text-emerald-600", bg: "bg-emerald-100", border: "border-emerald-200/50",
+                              keys: ['area', 'delivery_standard', 'is_resident', 'pets', 'payer', 'payment_method', 'payment_cycle']
+                            },
+                            {
+                              title: "车辆与出行", icon: Activity, color: "text-purple-600", bg: "bg-purple-100", border: "border-purple-200/50",
+                              keys: ['car_plate', 'is_new_energy', 'use_charging_pile', 'ebike_count', 'tricycle_count', 'stroller_count']
+                            },
+                            {
+                              title: "画像特征", icon: Sparkles, color: "text-orange-600", bg: "bg-orange-100", border: "border-orange-200/50",
+                              keys: ['customer_level', 'opinion_tags', 'negative_info']
+                            }
+                          ].map(group => (
+                            <div key={group.title} className="bg-white/50 p-4 sm:p-5 rounded-[1.5rem] border border-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:bg-white/70">
+                               <div className="flex items-center gap-2.5 mb-4">
+                                 <div className={`w-7 h-7 rounded-lg ${group.bg} flex items-center justify-center border ${group.border}`}>
+                                    <group.icon className={`w-4 h-4 ${group.color}`} />
+                                 </div>
+                                 <h5 className="text-[13px] font-bold text-[#424245] uppercase tracking-wider">{group.title}</h5>
+                               </div>
+                               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                 {group.keys.map(key => {
+                                    const val = selectedOwnerDetails[key];
+                                    const displayVal = formatVal(val, key);
+                                    const isEmpty = displayVal === '无' || displayVal === '0';
+                                    const isNegative = key === 'negative_info';
+                                    const isCustomerLevel = key === 'customer_level';
+                                    
+                                    let colSpanClass = 'col-span-1';
+                                    if (isNegative) colSpanClass = 'col-span-2 sm:col-span-3 lg:col-span-4';
+                                    else if (key === 'opinion_tags') colSpanClass = 'col-span-2 sm:col-span-2 lg:col-span-3';
+                                    
+                                    return (
+                                        <div key={key} className={`flex flex-col bg-white/90 backdrop-blur-sm px-3.5 py-3 rounded-[1rem] border ${isNegative && val ? 'border-red-200 bg-red-50' : 'border-black/[0.03]'} shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 ${colSpanClass}`}>
+                                            <span className={`text-[11px] font-bold mb-1.5 tracking-wide ${isNegative && val ? 'text-red-500' : 'text-[#86868b]'}`}>{fieldLabels[key]}</span>
+                                            {isCustomerLevel ? (
+                                                <span className={`w-fit px-2.5 py-0.5 rounded-md text-[12px] font-bold shadow-sm ${
+                                                  val === 'S' ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200/50' :
+                                                  val === 'A' ? 'bg-gradient-to-r from-red-100 to-orange-100 text-red-800 border border-red-200/50' :
+                                                  val === 'B' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200/50' :
+                                                  'bg-[#F2F2F7] text-[#424245] border border-black/5'
+                                                }`}>{displayVal}</span>
+                                            ) : (
+                                                <span className={`text-[13px] ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} ${(isNegative || key === 'opinion_tags') ? 'line-clamp-2 leading-relaxed' : 'truncate'} block`} title={displayVal}>
+                                                  {displayVal}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )
+                                 })}
+                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <h4 className="text-sm font-bold text-[#1d1d1f] mb-4 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-[#007AFF]" />
+                      历史变更轨迹与字段记录
+                    </h4>
+                    
+                    {roomHistory.length > 0 ? (
+                      <div className="relative border-l border-[#007AFF]/20 ml-4 space-y-8">
                     {roomHistory.map((hist, idx) => {
                       let snapshot = {};
                       let prevSnapshot = {};
@@ -1577,7 +1678,7 @@ function OwnerDynamicsPage() {
                             className={`bg-white/60 backdrop-blur-2xl border p-5 rounded-[1.5rem] text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/40 shadow-[0_16px_40px_rgba(0,122,255,0.15),inset_0_1px_2px_rgba(255,255,255,0.9)] -translate-y-1' : 'border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1'}`}
                           >
                             <div className="grid grid-cols-2 gap-4 mb-3">
-                              <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">操作人</span> <span className="font-medium">{snapshot.updated_by || '系统'}</span></div>
+                              <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">操作人</span> <span className="font-medium">{snapshot.updated_by || localStorage.getItem('butler_username') || '未知'}</span></div>
                               <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">客户等级</span>
                                 <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${
                                    snapshot.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
@@ -1591,7 +1692,8 @@ function OwnerDynamicsPage() {
                             <div className="text-red-600 bg-red-50/50 p-3 rounded-xl border border-red-100/50"><span className="text-red-500 text-xs block mb-1 font-medium">负向/敏感信息</span> {snapshot.negative_info || '-'}</div>
 
                             {/* 折叠/展开箭头 */}
-                            <div className="mt-3 flex justify-center text-[#86868b]/40 hover:text-[#007AFF] transition-colors">
+                            <div className="mt-3 flex flex-col items-center justify-center text-[#86868b]/50 hover:text-[#007AFF] transition-colors gap-1">
+                               {!isExpanded && <span className="text-[10px] font-medium tracking-wide">点击查看变更字段</span>}
                                <div className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#007AFF]' : ''}`}>
                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                                </div>
@@ -1623,13 +1725,15 @@ function OwnerDynamicsPage() {
                         </div>
                       )
                     })}
+                          </div>
+                        ) : (
+                          <div className="text-center text-sm text-[#86868b] bg-white/50 py-10 rounded-2xl border border-black/5 border-dashed">
+                            该业主暂无历史变动记录
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center text-sm text-[#86868b] bg-white/50 py-10 rounded-2xl border border-black/5 border-dashed">
-                    该业主暂无历史变动记录
-                  </div>
-                )}
-              </div>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-[#86868b] p-6">
@@ -1918,7 +2022,7 @@ function AdminPage({ onViewRecord }) {
                     <div className="text-[11px] text-[#424245] truncate" title={record.opinion_tags}>{record.opinion_tags || '暂无标签'}</div>
                   </td>
                   <td className="p-4 truncate">
-                    <div className="text-xs text-[#424245] mb-0.5 truncate">{record.updated_by || '系统'}</div>
+                    <div className="text-xs text-[#424245] mb-0.5 truncate">{record.updated_by || localStorage.getItem('butler_username') || '未知'}</div>
                     <div className="text-[10px] text-[#86868b] font-mono truncate">{new Date(record.updated_at).toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>
                   </td>
                   <td className="p-4 text-center">
@@ -1967,7 +2071,7 @@ function AdminPage({ onViewRecord }) {
                 </div>
                 
                 <div className="flex items-center justify-between text-[11px] text-[#86868b]">
-                   <div className="flex items-center gap-1.5">更新人: {record.updated_by || '系统'}</div>
+                   <div className="flex items-center gap-1.5">更新人: {record.updated_by || localStorage.getItem('butler_username') || '未知'}</div>
                    <div className="text-[#007AFF] bg-[#007AFF]/10 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">查看详情 <ArrowRight className="w-3 h-3" /></div>
                 </div>
               </div>
@@ -2025,7 +2129,7 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIBut
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">房号</span><span className="font-medium text-[#1d1d1f]">{details.building_room}</span></div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">业主姓名</span><span className="font-medium text-[#1d1d1f]">{details.owner_name || '-'}</span></div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">手机号</span><span className="text-[#424245]">{details.phone || '-'}</span></div>
-                 <div><span className="text-[#86868b] block mb-0.5 text-xs">最后操作人</span><span className="font-medium text-[#007AFF]">{details.updated_by || '系統'}</span></div>
+                 <div><span className="text-[#86868b] block mb-0.5 text-xs">最后操作人</span><span className="font-medium text-[#007AFF]">{details.updated_by || localStorage.getItem('butler_username') || '未知'}</span></div>
                  <div><span className="text-[#86868b] block mb-0.5 text-xs">客户等级</span>
                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                       details.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' :
@@ -2080,7 +2184,9 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIBut
                               </span>
                             )} 
                             <span className="text-black/10">|</span>
-                            <span>经办人: {rh.handler || '-'}</span>
+                            <span>录入: {rh.operator || '-'}</span>
+                            <span className="text-black/10">|</span>
+                            <span>接单: {rh.handler || '-'}</span>
                           </div>
                           {rh.process_detail && <div className="text-[#424245] text-xs bg-white p-2 rounded border border-black/5 mt-2"><span className="font-medium">详情:</span> {rh.process_detail}</div>}
                           {rh.completion_record && <div className="text-[#424245] text-xs bg-white p-2 rounded border border-black/5 mt-1"><span className="font-medium">完成记录:</span> {rh.completion_record}</div>}
@@ -2129,7 +2235,7 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIBut
                          <div className="flex items-center justify-between mb-3 border-b border-black/5 pb-2">
                            <div className="text-[#424245] font-medium flex items-center gap-2">
                              <User className="w-4 h-4 text-[#007AFF]" />
-                             操作人：{snapshot.updated_by || '系统'}
+                             操作人：{snapshot.updated_by || localStorage.getItem('butler_username') || '未知'}
                            </div>
                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${snapshot.customer_level === 'S' ? 'bg-yellow-100 text-yellow-800' : snapshot.customer_level === 'A' ? 'bg-red-100 text-red-800' : snapshot.customer_level === 'B' ? 'bg-blue-100 text-blue-800' : 'bg-[#E9E9EB] text-[#1d1d1f]'}`}>{snapshot.customer_level || 'C'}</span>
                          </div>

@@ -102,7 +102,7 @@ export default function OwnerRecordForm({ onUpdate }) {
   const addRepair = () => {
     setFormData(prev => ({
       ...prev,
-      repair_history: [...prev.repair_history, { report_time: new Date().toISOString().slice(0, 16), item: '', status: '处理中' }]
+      repair_history: [...prev.repair_history, { report_time: new Date().toISOString().slice(0, 16), item: '', handler: '', status: '处理中' }]
     }));
   };
 
@@ -289,9 +289,10 @@ export default function OwnerRecordForm({ onUpdate }) {
           <SectionHeader icon={Wrench} title="关联报修记录" subtitle="可同时录入该业主的历史或当前报修工单" />
           <div className="space-y-4">
             {formData.repair_history.map((repair, index) => (
-              <div key={index} className="bg-white/60 p-4 rounded-2xl border border-white/60 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div key={index} className="bg-white/60 p-4 rounded-2xl border border-white/60 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <InputField label="报修时间" name="report_time" value={repair.report_time} onChange={(e) => handleRepairChange(index, e)} type="datetime-local" />
                 <InputField label="报修项目" name="item" value={repair.item} onChange={(e) => handleRepairChange(index, e)} placeholder="例如：客厅灯不亮" />
+                <InputField label="接单人 (维修人)" name="handler" value={repair.handler} onChange={(e) => handleRepairChange(index, e)} placeholder="例如：张师傅" />
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <label className="block text-sm font-semibold text-[#424245] mb-2">状态</label>
