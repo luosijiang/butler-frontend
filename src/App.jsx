@@ -1216,27 +1216,34 @@ function RepairManagePage({ onUpdate, initialRoom }) {
     count: groupedRecords[room].length
   })).sort((a, b) => sortRoomsByNumber(a.room, b.room));
 
-  const lowerSearchTerm = searchTerm.toLowerCase();
+  // 优化：支持空格分隔的多关键词搜索，实现“某个业主”+“某个日期/项目”的精准定位
+  const searchTerms = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+
   // 优化：左侧列表支持跨维度搜索（包含报修日期和项目）
   const filteredRooms = roomList.filter(r => {
-    const matchRoom = r.room && r.room.toLowerCase().includes(lowerSearchTerm);
-    const matchOwner = r.owner_name && r.owner_name.toLowerCase().includes(lowerSearchTerm);
-    const matchRecords = groupedRecords[r.room].some(record => 
-      (record.report_time && record.report_time.toLowerCase().includes(lowerSearchTerm)) ||
-      (record.item && record.item.toLowerCase().includes(lowerSearchTerm))
-    );
-    return matchRoom || matchOwner || matchRecords;
+    if (searchTerms.length === 0) return true;
+    return searchTerms.every(term => {
+      const matchRoom = r.room && r.room.toLowerCase().includes(term);
+      const matchOwner = r.owner_name && r.owner_name.toLowerCase().includes(term);
+      const matchRecords = groupedRecords[r.room].some(record => 
+        (record.report_time && record.report_time.toLowerCase().includes(term)) ||
+        (record.item && record.item.toLowerCase().includes(term))
+      );
+      return matchRoom || matchOwner || matchRecords;
+    });
   });
 
   // 优化：右侧列表同步过滤。如果是通过搜房间号/姓名搜出来的，显示该人全部工单；如果是搜日期/项目搜出来的，只显示匹配的工单
   const displayedRecords = selectedRoom ? (groupedRecords[selectedRoom] || []).filter(record => {
-    if (!searchTerm) return true;
-    const matchRoomOrOwner = 
-      (selectedRoom.toLowerCase().includes(lowerSearchTerm)) || 
-      ((groupedRecords[selectedRoom][0]?.owner_name || '').toLowerCase().includes(lowerSearchTerm));
-    if (matchRoomOrOwner) return true;
-    return (record.report_time && record.report_time.toLowerCase().includes(lowerSearchTerm)) ||
-           (record.item && record.item.toLowerCase().includes(lowerSearchTerm));
+    if (searchTerms.length === 0) return true;
+    const roomStr = selectedRoom.toLowerCase();
+    const ownerStr = (groupedRecords[selectedRoom][0]?.owner_name || '').toLowerCase();
+    return searchTerms.every(term => {
+      const matchRoomOrOwner = roomStr.includes(term) || ownerStr.includes(term);
+      const matchRecord = (record.report_time && record.report_time.toLowerCase().includes(term)) ||
+                          (record.item && record.item.toLowerCase().includes(term));
+      return matchRoomOrOwner || matchRecord;
+    });
   }) : [];
 
   return (
@@ -1256,7 +1263,7 @@ function RepairManagePage({ onUpdate, initialRoom }) {
               <Search className="w-4 h-4 text-[#86868b] absolute left-3 top-2.5" />
               <input 
                 type="text"
-                placeholder="搜索房号/姓名/日期/项目..."
+                placeholder="搜索 例如: A-101 03-21..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-white/40 border border-white/50 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-colors hover:bg-white/50"
