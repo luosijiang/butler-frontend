@@ -100,9 +100,13 @@ export default function OwnerRecordForm({ onUpdate }) {
   };
 
   const addRepair = () => {
+    // 修复：获取带有时区偏移的正确本地时间，不再是 UTC 0时区时间
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    const localDatetime = now.toISOString().slice(0, 16);
     setFormData(prev => ({
       ...prev,
-      repair_history: [...prev.repair_history, { report_time: new Date().toISOString().slice(0, 16), item: '', handler: '', status: '处理中' }]
+      repair_history: [...prev.repair_history, { report_time: localDatetime, item: '', handler: '', status: '处理中' }]
     }));
   };
 
@@ -121,9 +125,14 @@ export default function OwnerRecordForm({ onUpdate }) {
     setIsLoading(true);
     setMessage({ type: '', text: '' });
 
+    // 修复：在提交给后端前，将带有 'T' 字符的时间格式清洗为空格
     const payload = {
       ...formData,
-      building_room: finalBuildingRoom
+      building_room: finalBuildingRoom,
+      repair_history: formData.repair_history.map(r => ({
+        ...r,
+        report_time: (r.report_time || '').replace('T', ' ')
+      }))
     };
 
     // 💡 核心防御：清理数字字段，避免向后端发送空字符串引发 422 类型校验错误

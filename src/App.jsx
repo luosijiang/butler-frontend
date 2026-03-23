@@ -15,8 +15,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001
 // --- 新增：工单历时计算辅助函数 ---
 const calculateDuration = (start, end) => {
   if (!start || !end) return '';
-  const startTime = new Date(start.replace(/-/g, '/')).getTime();
-  const endTime = new Date(end.replace(/-/g, '/')).getTime();
+  // 修复：将 'T' 转换为空格，再将 '-' 转换为 '/'，确保所有浏览器都能正确解析为 Date 对象
+  const startTime = new Date(start.replace('T', ' ').replace(/-/g, '/')).getTime();
+  const endTime = new Date(end.replace('T', ' ').replace(/-/g, '/')).getTime();
   if (isNaN(startTime) || isNaN(endTime) || endTime < startTime) return '';
 
   const diffMins = Math.floor((endTime - startTime) / 60000);
@@ -29,6 +30,19 @@ const calculateDuration = (start, end) => {
   if (hours > 0) res.push(`${hours}小时`);
   if (mins > 0 || res.length === 0) res.push(`${mins}分钟`);
   return res.join('');
+};
+
+// --- 新增：房号自然排序辅助函数（先按字母比，字母相同按数字升序） ---
+const sortRoomsByNumber = (roomA, roomB) => {
+  const a = roomA || '';
+  const b = roomB || '';
+  const matchA = a.match(/([^\d]*)(\d+)/);
+  const matchB = b.match(/([^\d]*)(\d+)/);
+  if (matchA && matchB) {
+    if (matchA[1] !== matchB[1]) return matchA[1].localeCompare(matchB[1]);
+    return parseInt(matchA[2], 10) - parseInt(matchB[2], 10);
+  }
+  return a.localeCompare(b);
 };
 
 // --- 新增：富有科技感与深度思考文字的 AI 等待动画组件 ---
@@ -171,6 +185,7 @@ export default function App() {
 
   const [inputValue, setInputValue] = useState('');
   const [mode, setMode] = useState('chat'); 
+  const [targetRepairRoom, setTargetRepairRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -807,6 +822,7 @@ export default function App() {
            </button>
            <button 
              onClick={() => {
+               setTargetRepairRoom(null); // 点击侧边栏菜单时，重置目标房号展示总览列表
                setMode('repair_manage');
                if (window.innerWidth <= 768) setIsSidebarOpen(false);
              }} 
@@ -941,7 +957,7 @@ export default function App() {
               <OwnerRecordForm onUpdate={fetchStats} />
             </div>
           ) : mode === 'repair_manage' ? (
-            <RepairManagePage onUpdate={fetchStats} />
+            <RepairManagePage onUpdate={fetchStats} initialRoom={targetRepairRoom} />
           ) : mode === 'owner_dynamics' ? (
             <OwnerDynamicsPage />
           ) : (
@@ -1032,11 +1048,14 @@ export default function App() {
                </div>
                <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
                  {/* 核心修改：利用 sort 将工单按时间升序排列（越早越靠前） */}
-                 {currentUser.recentPending?.length > 0 ? [...currentUser.recentPending].sort((a, b) => new Date(a.report_time.replace(/-/g, '/')).getTime() - new Date(b.report_time.replace(/-/g, '/')).getTime()).map(order => {
+                 {currentUser.recentPending?.length > 0 ? [...currentUser.recentPending].sort((a, b) => new Date(a.report_time.replace('T', ' ').replace(/-/g, '/')).getTime() - new Date(b.report_time.replace('T', ' ').replace(/-/g, '/')).getTime()).map(order => {
                    // 计算是否超过 24 小时 (毫秒)
-                   const isUrgent = (new Date() - new Date(order.report_time.replace(/-/g, '/'))) > 24 * 60 * 60 * 1000;
+                   const isUrgent = (new Date() - new Date(order.report_time.replace('T', ' ').replace(/-/g, '/'))) > 24 * 60 * 60 * 1000;
                    return (
-                     <div key={order.id} onClick={() => setMode('repair_manage')} className={`p-3.5 rounded-[1.2rem] border shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all cursor-pointer hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden ${isUrgent ? 'bg-gradient-to-br from-red-50 to-white border-red-100' : 'bg-white/80 border-black/[0.03] hover:border-blue-100'}`}>
+                     <div key={order.id} onClick={() => {
+                         setTargetRepairRoom(order.building_room); 
+                         setMode('repair_manage');
+                     }} className={`p-3.5 rounded-[1.2rem] border shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all cursor-pointer hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden ${isUrgent ? 'bg-gradient-to-br from-red-50 to-white border-red-100' : 'bg-white/80 border-black/[0.03] hover:border-blue-100'}`}>
                         {isUrgent && <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />}
                         {!isUrgent && <div className="absolute top-0 left-0 w-1 h-full bg-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />}
                         <div className="flex justify-between items-start mb-2 pl-1">
@@ -1047,7 +1066,7 @@ export default function App() {
                         <div className={`text-[10px] flex items-center justify-between pl-1 ${isUrgent ? 'text-red-500 font-medium' : 'text-[#86868b]'}`}>
                           <div className="flex items-center gap-1.5">
                             {isUrgent ? <AlertTriangle className="w-3 h-3" /> : <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
-                            {order.report_time}
+                            {order.report_time.replace('T', ' ')}
                           </div>
                           {isUrgent && <span className="text-[9px] font-bold tracking-wider">超24H</span>}
                         </div>
@@ -1152,13 +1171,17 @@ export default function App() {
   );
 }
 
-function RepairManagePage({ onUpdate }) {
+function RepairManagePage({ onUpdate, initialRoom }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingRecord, setEditingRecord] = useState(null);
   const [toast, setToast] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(initialRoom || null);
+
+  useEffect(() => {
+    setSelectedRoom(initialRoom || null);
+  }, [initialRoom]);
 
   const fetchRecords = async () => {
     const token = localStorage.getItem('butler_auth_token');
@@ -1191,12 +1214,30 @@ function RepairManagePage({ onUpdate }) {
     room,
     owner_name: groupedRecords[room][0].owner_name || '未知业主',
     count: groupedRecords[room].length
-  }));
+  })).sort((a, b) => sortRoomsByNumber(a.room, b.room));
 
   const lowerSearchTerm = searchTerm.toLowerCase();
-  const filteredRooms = roomList.filter(r => 
-    (r.room && r.room.toLowerCase().includes(lowerSearchTerm)) || (r.owner_name && r.owner_name.toLowerCase().includes(lowerSearchTerm))
-  );
+  // 优化：左侧列表支持跨维度搜索（包含报修日期和项目）
+  const filteredRooms = roomList.filter(r => {
+    const matchRoom = r.room && r.room.toLowerCase().includes(lowerSearchTerm);
+    const matchOwner = r.owner_name && r.owner_name.toLowerCase().includes(lowerSearchTerm);
+    const matchRecords = groupedRecords[r.room].some(record => 
+      (record.report_time && record.report_time.toLowerCase().includes(lowerSearchTerm)) ||
+      (record.item && record.item.toLowerCase().includes(lowerSearchTerm))
+    );
+    return matchRoom || matchOwner || matchRecords;
+  });
+
+  // 优化：右侧列表同步过滤。如果是通过搜房间号/姓名搜出来的，显示该人全部工单；如果是搜日期/项目搜出来的，只显示匹配的工单
+  const displayedRecords = selectedRoom ? (groupedRecords[selectedRoom] || []).filter(record => {
+    if (!searchTerm) return true;
+    const matchRoomOrOwner = 
+      (selectedRoom.toLowerCase().includes(lowerSearchTerm)) || 
+      ((groupedRecords[selectedRoom][0]?.owner_name || '').toLowerCase().includes(lowerSearchTerm));
+    if (matchRoomOrOwner) return true;
+    return (record.report_time && record.report_time.toLowerCase().includes(lowerSearchTerm)) ||
+           (record.item && record.item.toLowerCase().includes(lowerSearchTerm));
+  }) : [];
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 h-full flex flex-col animate-in fade-in duration-500">
@@ -1215,7 +1256,7 @@ function RepairManagePage({ onUpdate }) {
               <Search className="w-4 h-4 text-[#86868b] absolute left-3 top-2.5" />
               <input 
                 type="text"
-                placeholder="搜索房号 / 姓名..."
+                placeholder="搜索房号/姓名/日期/项目..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-white/40 border border-white/50 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-colors hover:bg-white/50"
@@ -1257,13 +1298,13 @@ function RepairManagePage({ onUpdate }) {
                   </h3>
                 </div>
                 <div className="text-xs text-[#86868b] bg-[#F2F2F7] px-2.5 py-1 rounded-md font-medium">
-                  {groupedRecords[selectedRoom]?.length || 0} 项记录
+                  {displayedRecords.length} 项记录
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 {/* 全端統一：卡片式佈局，徹底解決寬度擠壓與向右滾動的問題 */}
                 <div className="grid grid-cols-1 gap-4">
-                  {(groupedRecords[selectedRoom] || []).map((record) => (
+                  {displayedRecords.map((record) => (
                     <div key={record.id} className={`p-5 rounded-[1.5rem] border shadow-[0_8px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${record.status === '已完成' ? 'bg-white/30 backdrop-blur-md border-white/40 opacity-90' : 'bg-white/60 backdrop-blur-xl border-white/80'}`}>
                       <div className="flex justify-between items-start mb-3">
                         <span className="font-mono text-sm text-[#86868b] font-medium">#{record.id}</span>
@@ -1272,10 +1313,10 @@ function RepairManagePage({ onUpdate }) {
                       <div className="font-semibold text-[#1d1d1f] text-base mb-4">{record.item}</div>
                       
                       <div className="space-y-2 text-sm text-[#86868b] bg-black/[0.02] p-3.5 rounded-xl mb-4 border border-black/5 flex-1">
-                        <div className="flex items-center gap-2"><span className="font-medium text-[#424245]">报事:</span> {record.report_time}</div>
+                        <div className="flex items-center gap-2"><span className="font-medium text-[#424245]">报事:</span> {record.report_time.replace('T', ' ')}</div>
                         {record.completion_time && (
                           <div className="text-green-600 flex items-center gap-2 flex-wrap">
-                            <span><span className="font-medium text-green-700">完成:</span> {record.completion_time}</span>
+                            <span><span className="font-medium text-green-700">完成:</span> {record.completion_time.replace('T', ' ')}</span>
                             <span className="bg-green-100/80 text-green-700 px-1.5 py-[1px] rounded text-xs font-medium">历时 {calculateDuration(record.report_time, record.completion_time)}</span>
                           </div>
                         )}
@@ -1467,7 +1508,9 @@ function OwnerDynamicsPage() {
     })
       .then(res => res.json())
       .then(data => {
-        setOwners(Array.isArray(data.records) ? data.records : []);
+        let fetchedOwners = Array.isArray(data.records) ? data.records : [];
+        fetchedOwners.sort((a, b) => sortRoomsByNumber(a.building_room, b.building_room));
+        setOwners(fetchedOwners);
         setLoadingOwners(false);
       })
       .catch(err => {
@@ -1577,8 +1620,10 @@ function OwnerDynamicsPage() {
                   <div className="animate-in fade-in duration-500">
                     {/* 优化：分类分组显示业主全部最新信息，排版更加精美 */}
                     {selectedOwnerDetails && (
-                      <div className="bg-white/40 backdrop-blur-3xl border border-white/80 p-5 sm:p-7 rounded-[2rem] mb-8 shadow-[0_12px_40px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#007AFF]/10 to-purple-500/10 rounded-full blur-3xl -z-10" />
+                      <div className="bg-white/40 backdrop-blur-3xl border border-white/80 p-5 sm:p-7 rounded-[2rem] mb-8 shadow-[0_12px_40px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] relative">
+                        <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none -z-10">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#007AFF]/10 to-purple-500/10 rounded-full blur-3xl" />
+                        </div>
                         
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/60">
                           <h4 className="text-base font-extrabold text-[#1d1d1f] flex items-center gap-3">
@@ -1632,20 +1677,48 @@ function OwnerDynamicsPage() {
                                     else if (key === 'opinion_tags') colSpanClass = 'col-span-2 sm:col-span-2 lg:col-span-3';
                                     
                                     return (
-                                        <div key={key} onClick={() => setExpandedField(isExpanded ? null : key)} className={`flex flex-col bg-white/90 backdrop-blur-sm px-3.5 py-3 rounded-[1rem] border ${isNegative && val ? 'border-red-200 bg-red-50' : isExpanded ? 'border-[#007AFF]/30 bg-blue-50/30' : 'border-black/[0.03]'} shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer ${isExpanded ? 'col-span-2 sm:col-span-3 lg:col-span-4 ring-2 ring-[#007AFF]/20 z-10' : colSpanClass}`} title={isExpanded ? "点击折叠" : "点击展开完整信息"}>
-                                            <span className={`text-[11px] font-bold mb-1.5 tracking-wide ${isNegative && val ? 'text-red-500' : 'text-[#86868b]'}`}>{fieldLabels[key]}</span>
-                                            {isCustomerLevel ? (
-                                                <span className={`w-fit px-2.5 py-0.5 rounded-md text-[12px] font-bold shadow-sm ${
-                                                  val === 'S' ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200/50' :
-                                                  val === 'A' ? 'bg-gradient-to-r from-red-100 to-orange-100 text-red-800 border border-red-200/50' :
-                                                  val === 'B' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200/50' :
-                                                  'bg-[#F2F2F7] text-[#424245] border border-black/5'
-                                                }`}>{displayVal}</span>
-                                            ) : (
-                                                <span className={`text-[13px] ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} ${isExpanded ? 'break-words whitespace-pre-wrap' : (isNegative || key === 'opinion_tags') ? 'line-clamp-2 leading-relaxed' : 'truncate'} block`}>
-                                                  {displayVal}
-                                                </span>
-                                            )}
+                                        <div key={key} className={`relative ${colSpanClass}`}>
+                                            {/* 常规占位卡片：始终占据文档流位置，不影响原排版 */}
+                                            <div 
+                                              onClick={() => setExpandedField(isExpanded ? null : key)}
+                                              className={`flex flex-col bg-white/90 backdrop-blur-sm px-3.5 py-3 rounded-[1rem] border transition-all duration-300 cursor-pointer w-full h-full shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 z-10 ${isNegative && val ? 'border-red-200 bg-red-50' : 'border-black/[0.03]'}`} 
+                                              title="点击展开完整信息"
+                                            >
+                                                <span className={`text-[11px] font-bold mb-1.5 tracking-wide ${isNegative && val ? 'text-red-500' : 'text-[#86868b]'}`}>{fieldLabels[key]}</span>
+                                                {isCustomerLevel ? (
+                                                    <span className={`w-fit px-2.5 py-0.5 rounded-md text-[12px] font-bold shadow-sm ${
+                                                      val === 'S' ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200/50' :
+                                                      val === 'A' ? 'bg-gradient-to-r from-red-100 to-orange-100 text-red-800 border border-red-200/50' :
+                                                      val === 'B' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200/50' :
+                                                      'bg-[#F2F2F7] text-[#424245] border border-black/5'
+                                                    }`}>{displayVal}</span>
+                                                ) : (
+                                                    <span className={`text-[13px] ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} ${(isNegative || key === 'opinion_tags') ? 'line-clamp-2 leading-relaxed' : 'truncate'} block`}>
+                                                      {displayVal}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            
+                                            {/* 绝对悬浮层：跨越格子高度但不推挤其他元素，通过透明度控制丝滑淡入淡出 */}
+                                            <div 
+                                              onClick={() => setExpandedField(null)} 
+                                              className={`absolute top-0 left-0 w-[calc(100%+16px)] -translate-x-[8px] -translate-y-[8px] flex flex-col bg-white/95 backdrop-blur-3xl px-4 py-3.5 rounded-[1.2rem] border border-[#007AFF]/40 shadow-[0_32px_80px_rgba(0,122,255,0.25)] ring-4 ring-[#007AFF]/15 h-auto min-h-full z-[100] cursor-pointer transition-all duration-300 origin-top-left ${isExpanded ? 'opacity-100 scale-100 pointer-events-auto visible' : 'opacity-0 scale-95 pointer-events-none invisible'}`}
+                                              title="点击折叠"
+                                            >
+                                               <span className={`text-[11px] font-bold mb-1.5 tracking-wide ${isNegative && val ? 'text-red-500' : 'text-[#007AFF]'}`}>{fieldLabels[key]}</span>
+                                               {isCustomerLevel ? (
+                                                   <span className={`w-fit px-2.5 py-0.5 rounded-md text-[12px] font-bold shadow-sm ${
+                                                     val === 'S' ? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200/50' :
+                                                     val === 'A' ? 'bg-gradient-to-r from-red-100 to-orange-100 text-red-800 border border-red-200/50' :
+                                                     val === 'B' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200/50' :
+                                                     'bg-[#F2F2F7] text-[#424245] border border-black/5'
+                                                   }`}>{displayVal}</span>
+                                               ) : (
+                                                   <span className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isNegative && val ? 'text-red-700 font-bold' : isEmpty ? 'text-[#86868b]/40 font-medium' : 'text-[#1d1d1f] font-semibold'} block`}>
+                                                     {displayVal}
+                                                   </span>
+                                               )}
+                                            </div>
                                         </div>
                                     )
                                  })}
@@ -1687,7 +1760,7 @@ function OwnerDynamicsPage() {
                           <div className="text-xs text-[#86868b] font-mono mb-2">{hist.created_at}</div>
                           <div 
                             onClick={() => setExpandedHistId(isExpanded ? null : (hist.id || idx))}
-                            className={`bg-white/60 backdrop-blur-2xl border p-5 rounded-[1.5rem] text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/40 shadow-[0_16px_40px_rgba(0,122,255,0.15),inset_0_1px_2px_rgba(255,255,255,0.9)] -translate-y-1' : 'border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1'}`}
+                            className={`bg-white/60 backdrop-blur-2xl border p-5 rounded-[1.5rem] text-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/40 shadow-[0_20px_48px_rgba(0,122,255,0.2),inset_0_1px_2px_rgba(255,255,255,0.9)] -translate-y-1.5 scale-[1.02] z-10 relative' : 'border-white/80 shadow-[0_8px_24px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.08)] hover:-translate-y-1'}`}
                           >
                             <div className="grid grid-cols-2 gap-4 mb-3">
                               <div className="text-[#424245]"><span className="text-[#86868b] text-xs block mb-1">操作人</span> <span className="font-medium">{snapshot.updated_by || localStorage.getItem('butler_username') || '未知'}</span></div>
@@ -2188,10 +2261,10 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIBut
                             <span className={`px-2 py-0.5 rounded text-[10px] ${rh.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{rh.status}</span>
                           </div>
                           <div className="text-[#86868b] text-xs mb-2 flex items-center flex-wrap gap-x-2 gap-y-1">
-                            <span>报事: {rh.report_time}</span> 
+                            <span>报事: {rh.report_time.replace('T', ' ')}</span> 
                             {rh.completion_time && (
                               <span className="text-green-600 flex items-center gap-1.5">
-                                完成: {rh.completion_time}
+                                完成: {rh.completion_time.replace('T', ' ')}
                                 <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-medium">历时 {calculateDuration(rh.report_time, rh.completion_time)}</span>
                               </span>
                             )} 
@@ -2242,7 +2315,7 @@ function OwnerDetailModal({ record, onClose, onAIAnalyze, showHistory, hideAIBut
                        <div className="text-xs text-[#86868b] font-mono mb-2">{hist.created_at}</div>
                        <div 
                          onClick={() => setExpandedHistId(isExpanded ? null : (hist.id || idx))}
-                         className={`bg-[#F2F2F7]/50 border p-4 rounded-2xl text-sm transition-all cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/30 shadow-[0_4px_24px_rgba(0,122,255,0.12)] bg-white' : 'border-black/5 shadow-sm hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)]'}`}
+                        className={`bg-[#F2F2F7]/50 border p-4 rounded-2xl text-sm transition-all duration-300 cursor-pointer select-none ${isExpanded ? 'border-[#007AFF]/30 shadow-[0_12px_32px_rgba(0,122,255,0.15)] bg-white -translate-y-1 scale-[1.01] z-10 relative' : 'border-black/5 shadow-sm hover:shadow-[0_4px_15px_rgba(0,0,0,0.05)] hover:-translate-y-0.5'}`}
                        >
                          <div className="flex items-center justify-between mb-3 border-b border-black/5 pb-2">
                            <div className="text-[#424245] font-medium flex items-center gap-2">
