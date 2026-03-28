@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { FileText, User, Car, DollarSign, Sparkles, Wrench, Plus, Trash2, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
+import { FileText, User, Car, DollarSign, Sparkles, Wrench, Plus, Trash2, Loader2, CheckCircle, AlertTriangle, Activity, Edit, Search } from 'lucide-react';
+import request from './utils/request';
 
 const SectionHeader = ({ icon, title, subtitle }) => {
   const Icon = icon;
@@ -46,12 +45,13 @@ const ToggleSwitch = ({ label, name, checked, onChange }) => (
 );
 
 
-export default function OwnerRecordForm({ onUpdate }) {
+export default function OwnerRecordForm({ onUpdate, initialData, onClearEdit }) {
   const initialFormData = {
     building_room: '',
     area: '',
     delivery_standard: '毛坯',
     owner_name: '',
+    occupation: '',
     age: '',
     gender: '男',
     phone: '',
@@ -71,6 +71,9 @@ export default function OwnerRecordForm({ onUpdate }) {
     payer: '',
     payment_method: '微信',
     payment_cycle: '按年',
+    payment_date: '',
+    activity_frequency: '',
+    activity_type: '',
     // --- 核心修改：客户等级默认为 C ---
     customer_level: 'C',
     opinion_tags: '',
@@ -83,6 +86,68 @@ export default function OwnerRecordForm({ onUpdate }) {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [buildingZone, setBuildingZone] = useState('A');
   const [roomNum, setRoomNum] = useState('');
+
+  // --- 核心新增：监听编辑数据传入，自动反填表单 ---
+  React.useEffect(() => {
+    if (initialData) {
+      const mappedData = { ...initialFormData };
+      Object.keys(initialFormData).forEach(key => {
+        if (initialData[key] !== undefined && initialData[key] !== null) {
+          if (typeof initialFormData[key] === 'boolean') {
+            mappedData[key] = !!initialData[key];
+          } else {
+            mappedData[key] = initialData[key];
+          }
+        }
+      });
+      // 编辑档案时不自动带入报修历史记录，以免重复提交
+      mappedData.repair_history = [];
+      setFormData(mappedData);
+      
+      const parts = (initialData.building_room || '').split('-');
+      if (parts.length >= 2) {
+        setBuildingZone(parts[0]);
+        setRoomNum(parts.slice(1).join('-'));
+      }
+    } else {
+      setFormData(initialFormData);
+      setBuildingZone('A');
+      setRoomNum('');
+    }
+  }, [initialData]);
+
+  // --- 新增：在录入界面通过房号一键拉取档案，实现快速更改 ---
+  const fetchExistingRecord = async () => {
+    const finalBuildingRoom = roomNum.trim() ? `${buildingZone}-${roomNum.trim()}` : '';
+    if (!finalBuildingRoom) {
+      setMessage({ type: 'error', text: '请先填写需要修改的房号' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await request.get(`/api/records/${encodeURIComponent(finalBuildingRoom)}`);
+      
+      const mappedData = { ...initialFormData };
+      Object.keys(initialFormData).forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          mappedData[key] = typeof initialFormData[key] === 'boolean' ? !!data[key] : data[key];
+        }
+      });
+      mappedData.repair_history = [];
+      setFormData(mappedData);
+      setMessage({ type: 'success', text: `已成功调出 ${finalBuildingRoom} 的档案，请直接修改并在底部保存。` });
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        window.alert(`未找到 ${finalBuildingRoom} 的已有档案，该住户为空。\n\n您可以直接在下方填入信息进行首次录入。`);
+        setMessage({ type: 'success', text: `未找到 ${finalBuildingRoom} 的档案，您可以直接录入新档案。` });
+        return;
+      }
+      setMessage({ type: 'error', text: err.response?.data?.detail || err.message });
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -146,34 +211,26 @@ export default function OwnerRecordForm({ onUpdate }) {
     });
 
     try {
-      const token = localStorage.getItem('butler_auth_token');
-      const response = await fetch(`${API_BASE_URL}/api/records`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const responseData = await request.post('/api/records', payload);
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || '提交失败，请检查网络或联系管理员。');
+      if (responseData.status === 'no-change') {
+        setMessage({ type: 'error', text: responseData.message });
+      } else {
+        setMessage({ type: 'success', text: '档案已成功录入/更新！' });
+        setFormData(initialFormData); // 清空表单
+        setBuildingZone('A'); // 重置楼栋
+        setRoomNum('');       // 重置房号
+        if (onUpdate) onUpdate(); // 触发 App.jsx 的数据刷新
+        if (onClearEdit) onClearEdit(); // 提交成功后清除编辑状态，返回新建模式
+
+        // 延迟 1 秒后自动平滑滚动回容器顶部，方便直接进行下一次填写
+        setTimeout(() => {
+          document.getElementById('main-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 1000);
       }
 
-      setMessage({ type: 'success', text: '档案已成功录入/更新！' });
-      setFormData(initialFormData); // 清空表单
-      setBuildingZone('A'); // 重置楼栋
-      setRoomNum('');       // 重置房号
-      if (onUpdate) onUpdate(); // 触发 App.jsx 的数据刷新
-
-      // 延迟 1 秒后自动平滑滚动回容器顶部，方便直接进行下一次填写
-      setTimeout(() => {
-        document.getElementById('main-scroll-area')?.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 1000);
-
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error.response?.data?.detail || error.message });
     } finally {
       setIsLoading(false);
       setTimeout(() => setMessage({ type: '', text: '' }), 5000);
@@ -184,31 +241,50 @@ export default function OwnerRecordForm({ onUpdate }) {
     <div className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-10">
         
+        {initialData && (
+          <div className="bg-orange-50 border border-orange-200 text-orange-700 px-5 py-3.5 rounded-2xl text-sm font-medium flex items-center justify-between shadow-sm">
+            <span className="flex items-center gap-2"><Edit className="w-4 h-4"/> 正在修改业主档案：<span className="font-bold">{initialData.building_room}</span></span>
+            <button type="button" onClick={() => { if(onClearEdit) onClearEdit(); }} className="text-orange-500 hover:text-orange-700 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors font-semibold">取消修改</button>
+          </div>
+        )}
+
         {/* 房产基础信息 */}
         <fieldset>
           <SectionHeader icon={FileText} title="房产基础信息" subtitle="关于房屋本身的基础数据" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-[#424245] mb-2">房号 (必填)</label>
-              <div className="flex gap-2">
-                <select
-                  value={buildingZone}
-                  onChange={(e) => setBuildingZone(e.target.value)}
-                  className="w-1/3 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex gap-2 flex-1">
+                  <select
+                    value={buildingZone}
+                    onChange={(e) => setBuildingZone(e.target.value)}
+                    className="w-24 sm:w-1/3 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                  >
+                    <option value="A">A 栋</option>
+                    <option value="B">B 栋</option>
+                    <option value="C">C 栋</option>
+                    <option value="D">D 栋</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={roomNum}
+                    onChange={(e) => setRoomNum(e.target.value)}
+                    placeholder="例如：101"
+                    className="flex-1 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchExistingRecord}
+                  disabled={!roomNum.trim() || isLoading}
+                  className="sm:w-auto w-full px-5 py-3 bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 rounded-xl transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <option value="A">A 栋</option>
-                  <option value="B">B 栋</option>
-                  <option value="C">C 栋</option>
-                  <option value="D">D 栋</option>
-                </select>
-                <input
-                  type="text"
-                  value={roomNum}
-                  onChange={(e) => setRoomNum(e.target.value)}
-                  placeholder="例如：101"
-                  className="w-2/3 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
-                />
+                  <Search className="w-4 h-4" />
+                  检索并调出档案
+                </button>
               </div>
+              <p className="text-[11px] text-[#86868b] mt-2 ml-1">💡 提示：输入房号后点击检索，可一键调出已有档案进行快速修改。</p>
             </div>
             <InputField label="建筑面积 (㎡)" name="area" value={formData.area} onChange={handleChange} placeholder="例如：120.5" type="number" />
             <div>
@@ -233,6 +309,7 @@ export default function OwnerRecordForm({ onUpdate }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <InputField label="业主姓名" name="owner_name" value={formData.owner_name} onChange={handleChange} placeholder="输入业主姓名" />
             <InputField label="手机号" name="phone" value={formData.phone} onChange={handleChange} placeholder="输入联系电话" />
+            <InputField label="职业" name="occupation" value={formData.occupation} onChange={handleChange} placeholder="例如：教师 / 医生 / 自由职业" />
             <InputField label="年龄" name="age" value={formData.age} onChange={handleChange} type="number" />
             <div>
               <label className="block text-sm font-semibold text-[#424245] mb-2">性别</label>
@@ -256,6 +333,53 @@ export default function OwnerRecordForm({ onUpdate }) {
             <InputField label="电动车数量" name="ebike_count" value={formData.ebike_count} onChange={handleChange} type="number" />
             <InputField label="三轮车数量" name="tricycle_count" value={formData.tricycle_count} onChange={handleChange} type="number" />
             <InputField label="儿童车数量" name="stroller_count" value={formData.stroller_count} onChange={handleChange} type="number" />
+          </div>
+        </fieldset>
+
+        {/* 对接与财务 */}
+        <fieldset>
+          <SectionHeader icon={DollarSign} title="对接与财务" subtitle="日常对接人与物业缴费信息" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <InputField label="平时对接人" name="contact_person" value={formData.contact_person} onChange={handleChange} placeholder="输入对接人姓名" />
+            <InputField label="与业主关系" name="relationship" value={formData.relationship} onChange={handleChange} placeholder="例如：本人 / 亲属 / 租客" />
+            <InputField label="联系方式" name="contact_phone" value={formData.contact_phone} onChange={handleChange} placeholder="输入对接人电话" />
+            <InputField label="缴费人" name="payer" value={formData.payer} onChange={handleChange} placeholder="输入缴费人姓名" />
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">缴费方式</label>
+              <select name="payment_method" value={formData.payment_method} onChange={handleChange} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+                <option>微信</option>
+                <option>支付宝</option>
+                <option>银行卡</option>
+                <option>现金</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">缴费周期</label>
+              <select name="payment_cycle" value={formData.payment_cycle} onChange={handleChange} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+                <option>按月</option>
+                <option>按季</option>
+                <option>按半年</option>
+                <option>按年</option>
+              </select>
+            </div>
+            <InputField label="缴费日期" name="payment_date" value={formData.payment_date} onChange={handleChange} type="date" />
+          </div>
+        </fieldset>
+
+        {/* 社区活动参与 */}
+        <fieldset>
+          <SectionHeader icon={Activity} title="社区活动参与" subtitle="业主参与社区活动的频次与偏好" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#424245] mb-2">参与频次</label>
+              <select name="activity_frequency" value={formData.activity_frequency} onChange={handleChange} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+                <option value="">未选择</option>
+                <option>经常</option>
+                <option>偶尔</option>
+                <option>从不</option>
+              </select>
+            </div>
+            <InputField label="参与活动类型" name="activity_type" value={formData.activity_type} onChange={handleChange} placeholder="例如：亲子活动、节日晚会" />
           </div>
         </fieldset>
 
@@ -338,7 +462,7 @@ export default function OwnerRecordForm({ onUpdate }) {
             className="w-full max-w-xs bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white font-semibold py-4 rounded-2xl shadow-lg shadow-blue-500/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait active:scale-95"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            {isLoading ? '正在提交...' : '确认录入'}
+            {isLoading ? '正在提交...' : (initialData ? '保存修改' : '确认录入')}
           </button>
         </div>
       </form>
