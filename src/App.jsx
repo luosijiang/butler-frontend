@@ -399,7 +399,7 @@ export default function App() {
       
       // 如果模型因為上下文過長等原因直接結束且沒有生成任何文字，提供優雅的防呆提示
       if (!hasStartedStreaming) {
-        setMessages(prev => [...prev, { role: 'ai', content: '⚠️ **AI 引擎未能生成有效回復**\n可能是由於多輪對話導致上下文過長，模型自動中斷了生成。建議您點擊左側的【新建對話】來清理歷史記憶。' }]);
+        setMessages(prev => [...prev, { role: 'ai', content: '⚠️ **AI 引擎未能生成有效回复**\n可能是由于多轮对话导致上下文过长，模型自动中断了生成。建议您点击左侧的【新建对话】来清理历史记忆。' }]);
       }
       fetchStats();
       
@@ -794,24 +794,54 @@ export default function App() {
               </div>
             )}
 
-            {messages.map((msg, idx) => (
+            {messages.map((msg, idx) => {
+              let isThinking = false;
+              let finalContent = msg.content;
+              let hasClosedThink = false;
+              if (msg.role === 'ai' && msg.content && typeof msg.content === 'string') {
+                 if (msg.content.includes('<think>')) {
+                    const thinkStartIndex = msg.content.indexOf('<think>');
+                    const thinkEndIndex = msg.content.indexOf('</think>');
+                    if (thinkEndIndex !== -1) {
+                         finalContent = msg.content.substring(thinkEndIndex + 8).trim();
+                         hasClosedThink = true;
+                    } else {
+                         isThinking = true;
+                         finalContent = ''; 
+                    }
+                 }
+              }
+              
+              return (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-                {msg.role === 'ai' && (
+                {msg.role === 'ai' && !isThinking && (
                   <div className="w-8 h-8 rounded-full bg-[#F2F2F7] flex items-center justify-center mr-2 shrink-0 mt-1">
                     <Sparkles className="w-4 h-4 text-[#86868b]"/>
                   </div>
                 )}
                 
-                <div className={`max-w-[85%] sm:max-w-[75%] break-words px-5 py-3.5 rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] text-[15px] ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-[#007AFF] via-[#0062FF] to-[#0051e3] text-white rounded-br-sm shadow-[0_12px_32px_rgba(0,122,255,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] hover:shadow-[0_16px_40px_rgba(0,122,255,0.4)] hover:-translate-y-1' 
-                    : 'bg-white/70 backdrop-blur-2xl border border-white/80 text-[#1d1d1f] rounded-bl-sm shadow-[0_12px_40px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)] hover:shadow-[0_16px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1'
-                }`}>
-                  {renderMessageContent(msg.content, msg.role === 'user', idx)}
-                </div>
-                
+                {isThinking ? (
+                    <div className="w-full pl-2">
+                        <ThinkingIndicator targetRoom={activeTargetRoom} />
+                    </div>
+                ) : (
+                    <div className={`max-w-[85%] sm:max-w-[75%] break-words px-5 py-3.5 rounded-3xl text-[15px] interactive-bubble animate-pop-in ${
+                      msg.role === 'user'
+                        ? 'chat-bubble-user rounded-br-sm' 
+                        : 'chat-bubble-ai rounded-bl-sm'
+                    }`}>
+                      {hasClosedThink ? (
+                          <>
+                             <div className="text-xs text-[#86868b] mb-3 flex items-center gap-1.5 opacity-80 border-b border-black/5 pb-2"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> 深度推理完成</div>
+                             {renderMessageContent(finalContent, false, idx)}
+                          </>
+                      ) : (
+                          renderMessageContent(finalContent, msg.role === 'user', idx)
+                      )}
+                    </div>
+                )}
               </div>
-            ))}
+            )})}
             
             {isLoading && <ThinkingIndicator targetRoom={activeTargetRoom} />}
             <div ref={messagesEndRef} className="h-4" />
