@@ -633,7 +633,7 @@ export default function App() {
            <div className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center shadow-sm">
              <Sparkles className="w-4 h-4" />
            </div>
-           <span>Butler AI</span>
+           <span>创客居AI智能系统</span>
         </div>
         
         <div className="px-4 pb-2">

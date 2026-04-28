@@ -41,7 +41,7 @@ export default function LoginPage({ onLogin }) {
           <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mb-4 shadow-md">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-semibold text-[#1d1d1f]">Butler AI</h1>
+          <h1 className="text-2xl font-semibold text-[#1d1d1f]">创客居AI智能系统</h1>
           <p className="text-[#86868b] text-sm mt-1">智能管家系统</p>
         </div>
 
