@@ -116,7 +116,12 @@ export default function App() {
   useEffect(() => {
     if (isLoggedIn) {
       checkSystemStatus();
-      const interval = setInterval(() => checkSystemStatus(false), 30000); // 30秒真实心跳检测
+      const interval = setInterval(() => {
+        // 智能休眠：当页面不在前台时暂停轮询，节省带宽和服务器资源
+        if (document.visibilityState === 'visible') {
+          checkSystemStatus(false);
+        }
+      }, 30000); // 30秒真实心跳检测
       return () => clearInterval(interval);
     }
   }, [isLoggedIn]);

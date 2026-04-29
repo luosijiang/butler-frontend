@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FileText, User, Car, DollarSign, Sparkles, Wrench, Plus, Trash2, Loader2, CheckCircle, AlertTriangle, Activity, Edit, Search } from 'lucide-react';
 import request from './utils/request';
 
-const SectionHeader = ({ icon, title, subtitle }) => {
+const SectionHeader = React.memo(({ icon, title, subtitle }) => {
   const Icon = icon;
   return (
     <div className="flex items-start gap-4 mb-5">
@@ -15,9 +15,9 @@ const SectionHeader = ({ icon, title, subtitle }) => {
       </div>
     </div>
   );
-};
+});
 
-const InputField = ({ label, name, value, onChange, placeholder, type = "text" }) => (
+const InputField = React.memo(({ label, name, value, onChange, placeholder, type = "text" }) => (
   <div>
     <label className="block text-sm font-semibold text-[#424245] mb-2">{label}</label>
     <input
@@ -29,9 +29,9 @@ const InputField = ({ label, name, value, onChange, placeholder, type = "text" }
       className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
     />
   </div>
-);
+));
 
-const ToggleSwitch = ({ label, name, checked, onChange }) => (
+const ToggleSwitch = React.memo(({ label, name, checked, onChange }) => (
     <div className="flex items-center justify-between bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
       <label className="text-sm font-semibold text-[#424245]">{label}</label>
       <button
@@ -42,7 +42,29 @@ const ToggleSwitch = ({ label, name, checked, onChange }) => (
         <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
       </button>
     </div>
-);
+));
+
+const RepairItemRow = React.memo(({ repair, index, onChange, onRemove }) => {
+  return (
+    <div className="bg-white/60 p-4 rounded-2xl border border-white/60 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <InputField label="报修时间" name="report_time" value={repair.report_time} onChange={(e) => onChange(index, e)} type="datetime-local" />
+      <InputField label="报修项目" name="item" value={repair.item} onChange={(e) => onChange(index, e)} placeholder="例如：客厅灯不亮" />
+      <InputField label="接单人 (维修人)" name="handler" value={repair.handler} onChange={(e) => onChange(index, e)} placeholder="例如：张师傅" />
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <label className="block text-sm font-semibold text-[#424245] mb-2">状态</label>
+          <select name="status" value={repair.status} onChange={(e) => onChange(index, e)} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+            <option>处理中</option>
+            <option>已完成</option>
+          </select>
+        </div>
+        <button type="button" onClick={() => onRemove(index)} className="p-3 text-red-500 hover:bg-red-100 rounded-xl transition-colors h-[46px] mt-auto mb-0">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+});
 
 
 export default function OwnerRecordForm({ onUpdate, initialData, onClearEdit }) {
@@ -149,23 +171,24 @@ export default function OwnerRecordForm({ onUpdate, initialData, onClearEdit }) 
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = React.useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-  };
+  }, []);
 
-  const handleRepairChange = (index, e) => {
+  const handleRepairChange = React.useCallback((index, e) => {
     const { name, value } = e.target;
-    const newRepairs = [...formData.repair_history];
-    newRepairs[index][name] = value;
-    setFormData(prev => ({ ...prev, repair_history: newRepairs }));
-  };
+    setFormData(prev => {
+      const newRepairs = [...prev.repair_history];
+      newRepairs[index] = { ...newRepairs[index], [name]: value };
+      return { ...prev, repair_history: newRepairs };
+    });
+  }, []);
 
-  const addRepair = () => {
-    // 修复：获取带有时区偏移的正确本地时间，不再是 UTC 0时区时间
+  const addRepair = React.useCallback(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     const localDatetime = now.toISOString().slice(0, 16);
@@ -173,12 +196,14 @@ export default function OwnerRecordForm({ onUpdate, initialData, onClearEdit }) 
       ...prev,
       repair_history: [...prev.repair_history, { report_time: localDatetime, item: '', handler: '', status: '处理中' }]
     }));
-  };
+  }, []);
 
-  const removeRepair = (index) => {
-    const newRepairs = formData.repair_history.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, repair_history: newRepairs }));
-  };
+  const removeRepair = React.useCallback((index) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      repair_history: prev.repair_history.filter((_, i) => i !== index) 
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -422,23 +447,13 @@ export default function OwnerRecordForm({ onUpdate, initialData, onClearEdit }) 
           <SectionHeader icon={Wrench} title="关联报修记录" subtitle="可同时录入该业主的历史或当前报修工单" />
           <div className="space-y-4">
             {formData.repair_history.map((repair, index) => (
-              <div key={index} className="bg-white/60 p-4 rounded-2xl border border-white/60 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <InputField label="报修时间" name="report_time" value={repair.report_time} onChange={(e) => handleRepairChange(index, e)} type="datetime-local" />
-                <InputField label="报修项目" name="item" value={repair.item} onChange={(e) => handleRepairChange(index, e)} placeholder="例如：客厅灯不亮" />
-                <InputField label="接单人 (维修人)" name="handler" value={repair.handler} onChange={(e) => handleRepairChange(index, e)} placeholder="例如：张师傅" />
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <label className="block text-sm font-semibold text-[#424245] mb-2">状态</label>
-                    <select name="status" value={repair.status} onChange={(e) => handleRepairChange(index, e)} className="w-full bg-white/50 backdrop-blur-md border border-white/60 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/30 focus:bg-white transition-all text-base sm:text-sm text-[#1d1d1f] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
-                      <option>处理中</option>
-                      <option>已完成</option>
-                    </select>
-                  </div>
-                  <button type="button" onClick={() => removeRepair(index)} className="p-3 text-red-500 hover:bg-red-100 rounded-xl transition-colors h-[46px] mt-auto mb-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              <RepairItemRow 
+                key={index}
+                index={index}
+                repair={repair}
+                onChange={handleRepairChange}
+                onRemove={removeRepair}
+              />
             ))}
             <button type="button" onClick={addRepair} className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#007AFF]/30 text-[#007AFF] hover:bg-[#007AFF]/10 rounded-xl py-3 transition-colors font-medium">
               <Plus className="w-4 h-4" /> 添加一条报修记录
