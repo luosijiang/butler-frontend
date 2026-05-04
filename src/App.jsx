@@ -425,16 +425,18 @@ export default function App() {
   };
 
   // --- 新增：專門用於數據分析的 AI 請求處理函數 ---
-  const handleAIAnalysis = async (room) => {
+  const handleAIAnalysis = async (room, isDeep = false) => {
     // 1. 關閉詳情彈窗，並切換到對話模式
-    const analysisGoal = `请结合档案，分析该业主目前的画像状态，并针对工单给予《非暴力沟通》的话术建议。`;
+    const analysisGoal = isDeep 
+      ? `请结合档案及其长期的【历史变迁时间线】，深度解析该业主的成长与画像演变，挖掘历史矛盾或潜在需求，并给予高情商的话术应对策略。`
+      : `请结合档案，分析该业主目前的画像状态，并针对工单给予《非暴力沟通》的话术建议。`;
     
     // 2. 核心優化：為每次分析創建一個全新的、乾淨的對話，徹底重置上下文
     const newId = Date.now().toString();
-    const userMsg = { role: 'user', content: `[AI 分析请求] 房号: ${room}\n\n**分析目标**:\n${analysisGoal}` };
+    const userMsg = { role: 'user', content: `[AI 分析请求] 房号: ${room}${isDeep ? ' (含深度变迁解析)' : ''}\n\n**分析目标**:\n${analysisGoal}` };
     const newChat = {
       id: newId,
-      title: `对 ${room} 的分析`,
+      title: `对 ${room} 的分析${isDeep ? ' (深度)' : ''}`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       messages: [userMsg],
       targetRoom: room
@@ -461,7 +463,8 @@ export default function App() {
         },
         body: JSON.stringify({
           selected_rooms: [room], // 將房號作為陣列傳遞
-          analysis_goal: analysisGoal
+          analysis_goal: analysisGoal,
+          deep_analysis: isDeep
         })
       });
 

@@ -186,9 +186,14 @@ export default function OwnerDetailModal({ record, onClose, onAIAnalyze, showHis
 
         <div className={`p-5 bg-white/40 flex ${hideAIButton ? 'justify-end' : 'justify-between'} border-t border-white/50 shrink-0`}>
           {!hideAIButton && (
-            <button onClick={() => onAIAnalyze(details.building_room)} className="px-5 py-2.5 bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white rounded-xl font-medium hover:opacity-90 shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
-              <Sparkles className="w-4 h-4"/> 🧠 讓 AI 分析並草擬回覆
-            </button>
+            <div className="flex gap-3">
+              <button onClick={() => onAIAnalyze(details.building_room, false)} className="px-5 py-2.5 bg-gradient-to-r from-[#007AFF] to-[#0051e3] text-white rounded-xl font-medium hover:opacity-90 shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
+                <Sparkles className="w-4 h-4"/> 🧠 讓 AI 分析並草擬回覆
+              </button>
+              <button onClick={() => onAIAnalyze(details.building_room, true)} className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-medium hover:opacity-90 shadow-md shadow-purple-500/20 transition-all flex items-center gap-2 active:scale-95">
+                🔮 深度历史与变迁解析
+              </button>
+            </div>
           )}
           <button onClick={onClose} className="px-6 py-2.5 bg-white border border-black/10 text-[#1d1d1f] rounded-xl font-medium hover:bg-black/5 transition-colors">關閉</button>
         </div>
